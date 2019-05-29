@@ -81,11 +81,11 @@ bool isConditionValid(int binary) {
     switch(binary) {
         case 0: // eq
         {
-            return getBit(registers[CPSR], 30) == 1;
+            return getBit(registers[CPSR], 30);
         }
         case 1: // ne
         {
-            return getBit(registers[CPSR], 30) == 0;
+            return !getBit(registers[CPSR], 30);
         }
         case 10: // ge
         {
@@ -97,11 +97,11 @@ bool isConditionValid(int binary) {
         }
         case 12: // gt
         {
-            return getBit(registers[CPSR], 30) == 0 && getBit(registers[CPSR], 31) == getBit(registers[CPSR], 28);
+            return !getBit(registers[CPSR], 30) && getBit(registers[CPSR], 31) == getBit(registers[CPSR], 28);
         }
         case 13: // le
         {
-            return getBit(registers[CPSR], 30) == 1 || getBit(registers[CPSR], 31) != getBit(registers[CPSR], 28);
+            return getBit(registers[CPSR], 30) || getBit(registers[CPSR], 31) != getBit(registers[CPSR], 28);
         }
         case 14: // al
         {
@@ -136,38 +136,38 @@ void decodeProcessing(int binary, struct decodedCode *decodedCode) {
     (*decodedCode).S = getBit(binary, 20);
     (*decodedCode).Rn = getBitRange(binary, 19, 4);
     (*decodedCode).Rd = getBitRange(binary, 15, 4);
-    if (getBit(binary, 25) == 1) {
+    if (getBit(binary, 25)) {
         int rotate = getBitRange(binary, 11, 4);
         int imm = getBitRange(binary, 7, 8);
-        (*decodedCode).carryOut = (imm == 0) ? 0 : getBit(imm, 2 * rotate - 1);
+        (*decodedCode).carryOut = (!imm) ? 0 : getBit(imm, 2 * rotate - 1);
         (*decodedCode).operand2 = rotateRight(imm, 2 * rotate);
     } else {
         (*decodedCode).Rm = getBitRange(binary, 3, 4);
         int shiftType = getBitRange(binary, 6, 2);
-        if (getBit(binary, 4) == 1 && getBit(binary, 7) == 0) {
+        if (getBit(binary, 4) && !(getBit(binary, 7))) {
             (*decodedCode).carryOut = 0;
             (*decodedCode).operand2 = registers[(*decodedCode).Rm];
         } else {
-            int shiftValue = (getBit(binary, 4) == 0) ? getBitRange(binary, 11, 5) : registers[getBitRange(binary, 11,
+            int shiftValue = (!(getBit(binary, 4))) ? getBitRange(binary, 11, 5) : registers[getBitRange(binary, 11,
                                                                                                            4)];
             switch (shiftType) {
                 case 0: // logical left
-                    (*decodedCode).carryOut = (shiftValue == 0) ? 0 : getBit(registers[(*decodedCode).Rm],
+                    (*decodedCode).carryOut = (!(shiftValue)) ? 0 : getBit(registers[(*decodedCode).Rm],
                                                                              31 - shiftValue);
                     (*decodedCode).operand2 = logicalLeft(registers[(*decodedCode).Rm], shiftValue);
                     break;
                 case 1: // logical right
-                    (*decodedCode).carryOut = (shiftValue == 0) ? 0 : getBit(registers[(*decodedCode).Rm],
+                    (*decodedCode).carryOut = (!(shiftValue)) ? 0 : getBit(registers[(*decodedCode).Rm],
                                                                              shiftValue - 1);
                     (*decodedCode).operand2 = logicalRight(registers[(*decodedCode).Rm], shiftValue);
                     break;
                 case 2: // arithmetic right
-                    (*decodedCode).carryOut = (shiftValue == 0) ? 0 : getBit(registers[(*decodedCode).Rm],
+                    (*decodedCode).carryOut = (!(shiftValue)) ? 0 : getBit(registers[(*decodedCode).Rm],
                                                                              shiftValue - 1);
                     (*decodedCode).operand2 = arithmeticRight(registers[(*decodedCode).Rm], shiftValue);
                     break;
                 case 3: // rotate right
-                    (*decodedCode).carryOut = (shiftValue == 0) ? 0 : getBit(registers[(*decodedCode).Rm],
+                    (*decodedCode).carryOut = (!(shiftValue)) ? 0 : getBit(registers[(*decodedCode).Rm],
                                                                              shiftValue - 1);
                     (*decodedCode).operand2 = rotateRight(registers[(*decodedCode).Rm], shiftValue);
                     break;
@@ -195,15 +195,15 @@ void decodeTransfer(int binary, struct decodedCode *decodedCode) {
     (*decodedCode).L = getBit(binary, 20);
     (*decodedCode).Rn = getBitRange(binary, 19, 4);
     (*decodedCode).Rd = getBitRange(binary, 15, 4);
-    if (getBit(binary, 25) == 0) {
+    if (!getBit(binary, 25)) {
         (*decodedCode).offset = getBitRange(binary, 11, 12);
     } else {
         (*decodedCode).Rm = getBitRange(binary, 3, 4);
         int shiftType = getBitRange(binary, 6, 2);
-        if (getBit(binary, 4) == 1 && getBit(binary, 7) == 0) {
+        if (getBit(binary, 4) && (!getBit(binary, 7))) {
             (*decodedCode).offset = registers[(*decodedCode).Rm];
         } else {
-            int shiftValue = (getBit(binary, 4) == 0) ? getBitRange(binary, 11, 5) : registers[getBitRange(binary, 11,
+            int shiftValue = (!(getBit(binary, 4))) ? getBitRange(binary, 11, 5) : registers[getBitRange(binary, 11,
                                                                                                            4)];
             switch (shiftType) {
                 case 0: // logical left
@@ -231,22 +231,22 @@ void decodeBranch(int binary, struct decodedCode *decodedCode) {
 }
 
 void decode(int binary, struct decodedCode *decodedCode) {
-    if (binary == 0) {
+    if (!binary) {
         (*decodedCode).instructionType = halt;
     } else {
         int condInt = getBitRange(binary, 31, 4);
         if (isConditionValid(condInt)) {
             // If the 27-th bit is 1 we have a branch
-            if (getBit(binary, 27) == 1) {
+            if (getBit(binary, 27)) {
                 decodeBranch(binary, decodedCode);
             }
                 // If the 26-th bit is 1 we have a transfer;
-            else if (getBit(binary, 26) == 1) {
+            else if (getBit(binary, 26)) {
                 decodeTransfer(binary, decodedCode);
             }
                 // Not 100% sure about the condition for Multiplying
-            else if (getBit(binary, 7) == 1 && getBit(binary, 6) == 0 && getBit(binary, 5) == 0 &&
-                     getBit(binary, 4) == 1) {
+            else if (getBit(binary, 7) && (!getBit(binary, 6)) && (!getBit(binary, 5)) &&
+                     (!getBit(binary, 4))) {
                 decodeMultiplying(binary, decodedCode);
             } else {
                 decodeProcessing(binary, decodedCode);
@@ -320,9 +320,9 @@ void executeProcessing(struct decodedCode decodedCode) {
         default:
             printf("Error\n");
     }
-    if (decodedCode.S == 1) {
+    if (decodedCode.S) {
         registers[CPSR] = changeBit(registers[CPSR], 29, decodedCode.carryOut);
-        if (result == 0) {
+        if (!result) {
             registers[CPSR] = changeBit(registers[CPSR], 30, 1);
         } else {
             registers[CPSR] = changeBit(registers[CPSR], 30, 0);
@@ -332,13 +332,13 @@ void executeProcessing(struct decodedCode decodedCode) {
 }
 
 void executeMultiplying(struct decodedCode decodedCode) {
-    if (decodedCode.A == 0) {
+    if (!decodedCode.A) {
         registers[decodedCode.Rd] = registers[decodedCode.Rm] * registers[decodedCode.Rs];
     } else {
         registers[decodedCode.Rd] = registers[decodedCode.Rm] * registers[decodedCode.Rs] + registers[decodedCode.Rn];
     }
-    if (decodedCode.S == 1) {
-        if (registers[decodedCode.Rd] == 0) {
+    if (decodedCode.S) {
+        if (!registers[decodedCode.Rd]) {
             registers[CPSR] = changeBit(registers[CPSR], 30, 1);
         }
         registers[CPSR] = changeBit(registers[CPSR], 31, getBit(registers[decodedCode.Rd], 31));
@@ -346,17 +346,17 @@ void executeMultiplying(struct decodedCode decodedCode) {
 }
 
 void executeTransfer(struct decodedCode decodedCode) {
-    int result = (decodedCode.U == 1) ? (registers[decodedCode.Rn] + decodedCode.offset) : (registers[decodedCode.Rn] -
+    int result = (decodedCode.U) ? (registers[decodedCode.Rn] + decodedCode.offset) : (registers[decodedCode.Rn] -
                                                                                          decodedCode.offset);
-    if (decodedCode.L == 1) { // load
-        if (decodedCode.P == 1) {
+    if (decodedCode.L) { // load
+        if (decodedCode.P) {
             registers[decodedCode.Rd] = memory[result];
         } else {
             registers[decodedCode.Rd] = memory[registers[decodedCode.Rn]];
             registers[decodedCode.Rn] = result;
         }
     } else {
-        if (decodedCode.P == '1') { // store
+        if (decodedCode.P) { // store
             memory[result] = registers[decodedCode.Rd];
         } else {
             memory[registers[decodedCode.Rn]] = registers[decodedCode.Rd];
