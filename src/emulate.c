@@ -80,33 +80,19 @@ int getBitRange(int binary, int n, int k) {
 bool isConditionValid(int binary) {
     switch(binary) {
         case 0: // eq
-        {
             return getBit(registers[CPSR], 30);
-        }
         case 1: // ne
-        {
             return !getBit(registers[CPSR], 30);
-        }
         case 10: // ge
-        {
             return getBit(registers[CPSR], 31) == getBit(registers[CPSR], 28);
-        }
         case 11: // lt
-        {
             return getBit(registers[CPSR], 31) != getBit(registers[CPSR], 28);
-        }
         case 12: // gt
-        {
             return !getBit(registers[CPSR], 30) && getBit(registers[CPSR], 31) == getBit(registers[CPSR], 28);
-        }
         case 13: // le
-        {
             return getBit(registers[CPSR], 30) || getBit(registers[CPSR], 31) != getBit(registers[CPSR], 28);
-        }
         case 14: // al
-        {
             return true;
-        }
         default:
             printf("Error\n");
             return false;
@@ -144,36 +130,32 @@ void decodeProcessing(int binary, struct decodedCode *decodedCode) {
     } else {
         (*decodedCode).Rm = getBitRange(binary, 3, 4);
         int shiftType = getBitRange(binary, 6, 2);
-        if (getBit(binary, 4) && !(getBit(binary, 7))) {
-            (*decodedCode).carryOut = 0;
-            (*decodedCode).operand2 = registers[(*decodedCode).Rm];
-        } else {
-            int shiftValue = (!(getBit(binary, 4))) ? getBitRange(binary, 11, 5) : registers[getBitRange(binary, 11,
-                                                                                                           4)];
-            switch (shiftType) {
-                case 0: // logical left
-                    (*decodedCode).carryOut = (!(shiftValue)) ? 0 : getBit(registers[(*decodedCode).Rm],
-                                                                             31 - shiftValue);
-                    (*decodedCode).operand2 = logicalLeft(registers[(*decodedCode).Rm], shiftValue);
-                    break;
-                case 1: // logical right
-                    (*decodedCode).carryOut = (!(shiftValue)) ? 0 : getBit(registers[(*decodedCode).Rm],
-                                                                             shiftValue - 1);
-                    (*decodedCode).operand2 = logicalRight(registers[(*decodedCode).Rm], shiftValue);
-                    break;
-                case 2: // arithmetic right
-                    (*decodedCode).carryOut = (!(shiftValue)) ? 0 : getBit(registers[(*decodedCode).Rm],
-                                                                             shiftValue - 1);
-                    (*decodedCode).operand2 = arithmeticRight(registers[(*decodedCode).Rm], shiftValue);
-                    break;
-                case 3: // rotate right
-                    (*decodedCode).carryOut = (!(shiftValue)) ? 0 : getBit(registers[(*decodedCode).Rm],
-                                                                             shiftValue - 1);
-                    (*decodedCode).operand2 = rotateRight(registers[(*decodedCode).Rm], shiftValue);
-                    break;
-                default:
-                    printf("Error\n");
-            }
+        int shiftValue = (!getBit(binary, 4)) ? getBitRange(binary, 11, 5) : registers[getBitRange(binary, 11,
+                                                                                                       4)];
+        switch (shiftType) {
+            case 0: // logical left
+                (*decodedCode).carryOut = (!shiftValue) ? 0 : getBit(registers[(*decodedCode).Rm],
+                                                                         31 - shiftValue);
+                (*decodedCode).operand2 = logicalLeft(registers[(*decodedCode).Rm], shiftValue);
+                break;
+            case 1: // logical right
+                (*decodedCode).carryOut = (!shiftValue) ? 0 : getBit(registers[(*decodedCode).Rm],
+                                                                         shiftValue - 1);
+                (*decodedCode).operand2 = logicalRight(registers[(*decodedCode).Rm], shiftValue);
+                break;
+            case 2: // arithmetic right
+                (*decodedCode).carryOut = (!shiftValue) ? 0 : getBit(registers[(*decodedCode).Rm],
+                                                                         shiftValue - 1);
+                (*decodedCode).operand2 = arithmeticRight(registers[(*decodedCode).Rm], shiftValue);
+                break;
+            case 3: // rotate right
+                (*decodedCode).carryOut = (!shiftValue) ? 0 : getBit(registers[(*decodedCode).Rm],
+                                                                         shiftValue - 1);
+                (*decodedCode).operand2 = rotateRight(registers[(*decodedCode).Rm], shiftValue);
+                break;
+            default:
+                printf("Error\n");
+
         }
     }
 }
@@ -200,10 +182,10 @@ void decodeTransfer(int binary, struct decodedCode *decodedCode) {
     } else {
         (*decodedCode).Rm = getBitRange(binary, 3, 4);
         int shiftType = getBitRange(binary, 6, 2);
-        if (getBit(binary, 4) && (!getBit(binary, 7))) {
+        if (getBit(binary, 4) && !getBit(binary, 7)) {
             (*decodedCode).offset = registers[(*decodedCode).Rm];
         } else {
-            int shiftValue = (!(getBit(binary, 4))) ? getBitRange(binary, 11, 5) : registers[getBitRange(binary, 11,
+            int shiftValue = (!getBit(binary, 4)) ? getBitRange(binary, 11, 5) : registers[getBitRange(binary, 11,
                                                                                                            4)];
             switch (shiftType) {
                 case 0: // logical left
@@ -245,8 +227,7 @@ void decode(int binary, struct decodedCode *decodedCode) {
                 decodeTransfer(binary, decodedCode);
             }
                 // Not 100% sure about the condition for Multiplying
-            else if (getBit(binary, 7) && (!getBit(binary, 6)) && (!getBit(binary, 5)) &&
-                     (!getBit(binary, 4))) {
+            else if (getBitRange(binary, 7, 4) == 9) {
                 decodeMultiplying(binary, decodedCode);
             } else {
                 decodeProcessing(binary, decodedCode);
@@ -350,16 +331,32 @@ void executeTransfer(struct decodedCode decodedCode) {
                                                                                          decodedCode.offset);
     if (decodedCode.L) { // load
         if (decodedCode.P) {
-            registers[decodedCode.Rd] = memory[result];
+            if (result + 3 > 65536) {
+                printf("Error: Out of bounds memory access at address ");
+                printHexadec(result);
+                printf("\n");
+            } else {
+                registers[decodedCode.Rd] = concat4bytes(memory[result + 3], memory[result + 2], memory[result + 1],
+                                                         memory[result]);
+            }
         } else {
-            registers[decodedCode.Rd] = memory[registers[decodedCode.Rn]];
+            registers[decodedCode.Rd] = concat4bytes(memory[registers[decodedCode.Rn] + 3],
+                                                     memory[registers[decodedCode.Rn] + 2],
+                                                     memory[registers[decodedCode.Rn] + 1],
+                                                     memory[registers[decodedCode.Rn]]);
             registers[decodedCode.Rn] = result;
         }
     } else {
         if (decodedCode.P) { // store
-            memory[result] = registers[decodedCode.Rd];
+            memory[result] = registers[decodedCode.Rd] & 0xff;
+            memory[result + 1] = (registers[decodedCode.Rd] >> 8) & 0xff;
+            memory[result + 2] = (registers[decodedCode.Rd] >> 16) & 0xff;
+            memory[result + 3] = (registers[decodedCode.Rd] >> 24) & 0xff;
         } else {
-            memory[registers[decodedCode.Rn]] = registers[decodedCode.Rd];
+            memory[registers[decodedCode.Rn]] = registers[decodedCode.Rd] & 0xff;
+            memory[registers[decodedCode.Rn] + 1] = (registers[decodedCode.Rd] >> 8) & 0xff;
+            memory[registers[decodedCode.Rn] + 2] = (registers[decodedCode.Rd] >> 16) & 0xff;
+            memory[registers[decodedCode.Rn] + 3] = (registers[decodedCode.Rd] >> 24) & 0xff;
             registers[decodedCode.Rn] = result;
         }
     }
@@ -450,115 +447,23 @@ int main(int argc, char **argv) {
 
     //Output
     printf("Registers:\n");
-    printf("$0  :");
-    if (registers[0] < -1000000000) {
-        printf(" ");
+    for (int k = 0; k < 13; k++) {
+        printf("$");
+        printf("%-3d", k);
+        printf(":");
+        if (registers[k] < -1000000000) {
+            printf(" ");
+        }
+        printf("%11d", registers[k]);
+        printf(" (");
+        printHexadec(registers[k]);
+        printf(")\n");
     }
-    printf("%*d", 11, registers[0]);
-    printf(" (");
-    printHexadec(registers[0]);
-    printf(")\n");
-    printf("$1  :");
-    if (registers[1] < -1000000000) {
-        printf(" ");
-    }
-    printf("%*d", 11, registers[1]);
-    printf(" (");
-    printHexadec(registers[1]);
-    printf(")\n");
-    printf("$2  :");
-    if (registers[2] < -1000000000) {
-        printf(" ");
-    }
-    printf("%*d", 11, registers[2]);
-    printf(" (");
-    printHexadec(registers[2]);
-    printf(")\n");
-    printf("$3  :");
-    if (registers[3] < -1000000000) {
-        printf(" ");
-    }
-    printf("%*d", 11, registers[3]);
-    printf(" (");
-    printHexadec(registers[3]);
-    printf(")\n");
-    printf("$4  :");
-    if (registers[4] < -1000000000) {
-        printf(" ");
-    }
-    printf("%*d", 11, registers[4]);
-    printf(" (");
-    printHexadec(registers[4]);
-    printf(")\n");
-    printf("$5  :");
-    if (registers[5] < -1000000000) {
-        printf(" ");
-    }
-    printf("%*d", 11, registers[5]);
-    printf(" (");
-    printHexadec(registers[5]);
-    printf(")\n");
-    printf("$6  :");
-    if (registers[6] < -1000000000) {
-        printf(" ");
-    }
-    printf("%*d", 11, registers[6]);
-    printf(" (");
-    printHexadec(registers[6]);
-    printf(")\n");
-    printf("$7  :");
-    if (registers[7] < -1000000000) {
-        printf(" ");
-    }
-    printf("%*d", 11, registers[7]);
-    printf(" (");
-    printHexadec(registers[7]);
-    printf(")\n");
-    printf("$8  :");
-    if (registers[8] < -1000000000) {
-        printf(" ");
-    }
-    printf("%*d", 11, registers[8]);
-    printf(" (");
-    printHexadec(registers[8]);
-    printf(")\n");
-    printf("$9  :");
-    if (registers[9] < -1000000000) {
-        printf(" ");
-    }
-    printf("%*d", 11, registers[9]);
-    printf(" (");
-    printHexadec(registers[9]);
-    printf(")\n");
-    printf("$10 :");
-    if (registers[10] < -1000000000) {
-        printf(" ");
-    }
-    printf("%*d", 11, registers[10]);
-    printf(" (");
-    printHexadec(registers[10]);
-    printf(")\n");
-    printf("$11 :");
-    if (registers[11] < -1000000000) {
-        printf(" ");
-    }
-    printf("%*d", 11, registers[11]);
-    printf(" (");
-    printHexadec(registers[11]);
-    printf(")\n");
-    printf("$12 :");
-    if (registers[12] < -1000000000) {
-        printf(" ");
-    }
-    printf("%*d", 11, registers[12]);
-    printf(" (");
-    printHexadec(registers[12]);
-    printf(")\n");
     printf("PC  :");
     if (registers[PC] < -1000000000) {
         printf(" ");
     }
-    printf("%*d", 11, registers[PC]);
+    printf("%11d", registers[PC]);
     printf(" (");
     printHexadec(registers[PC]);
     printf(")\n");
@@ -566,16 +471,19 @@ int main(int argc, char **argv) {
     if (registers[CPSR] < -1000000000) {
         printf(" ");
     }
-    printf("%*d", 11, registers[CPSR]);
+    printf("%11d", registers[CPSR]);
     printf(" (");
     printHexadec(registers[CPSR]);
     printf(")\n");
     printf("Non-zero memory:\n");
-    for (int j = 0; j < registers[PC] - 8; j += 4) {
-        printHexadec(j);
-        printf(": ");
-        printHexadec(concat4bytes(memory[j], memory[j + 1], memory[j + 2], memory[j + 3]));
-        printf("\n");
+    for (int j = 0; j < 65536; j += 4) {
+        int result = concat4bytes(memory[j], memory[j + 1], memory[j + 2], memory[j + 3]);
+        if (result != 0) {
+            printHexadec(j);
+            printf(": ");
+            printHexadec(result);
+            printf("\n");
+        }
     }
 
     return EXIT_SUCCESS;
