@@ -1,395 +1,333 @@
 #include <stdio.h>
-#include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
-#include <math.h>
 
 #define MEMORY_SIZE 65536
 #define REGISTERS 17
-#define PC 15
-#define CPSR 16
+#define PC_REF 15
+#define CPSR_REF 16
 
-enum instructionType {processing, multiplying, transfer, branch, halt, invalid};
-
-int registers[REGISTERS];
-unsigned char memory[MEMORY_SIZE];
-int finished = 0;
-
-// Found on the internet
-void printHexadec(int n) {
-    char hexadec[9];
-    sprintf(hexadec, "%x", n);
-    printf("0x");
-    for (int i = strlen(hexadec); i < 8; i++) {
-        printf("0");
-    }
-    printf("%s", hexadec);
-}
-
-int concat4bytes(int fst, int snd, int trd, int frth) {
-    return (((fst << 8) | snd) << 16) | ((trd << 8) | frth);
-}
-
-// Returns the k-th bit
-int getBit(int n, int k) {
-    return (n >> k) & 1;
-}
-
-// Found on the Internet
-// Returns n with k-th bit changed to x (x could be either 0 or 1)
-int changeBit (int n, int k, int x) {
-    return n ^ ((-x ^ n) & (1UL << k));
-}
-
-// I wrote this
-int logicalLeft(int n, int k) {
-    return n << k;
-}
-
-// Found on the Internet
-int logicalRight(int n, int k) {
-    return (int)((unsigned int)n >> k);
-}
-
-// I wrote this
-int arithmeticRight(int n, int k) {
-    return n >> k;
-}
-
-// Found on the Internet
-int rotateRight(int n, int k) {
-    return n >> k | n << (32-k);
-}
-
-bool checkOverflow(int a, int b) {
-    int result = a + b;
-    if(a > 0 && b > 0 && result < 0)
-        return true;
-    if(a < 0 && b < 0 && result > 0)
-        return true;
-    return false;
-}
-
-// I wrote this
-// Returns the bit range of length k starting from bit n (left to right, from higher to lower)
-int getBitRange(int binary, int n, int k) {
-    return logicalRight((binary << (31 - n)), 32 - k);
-}
-
-bool isConditionValid(int binary) {
-    switch(binary) {
-        case 0: // eq
-            return getBit(registers[CPSR], 30);
-        case 1: // ne
-            return !getBit(registers[CPSR], 30);
-        case 10: // ge
-            return getBit(registers[CPSR], 31) == getBit(registers[CPSR], 28);
-        case 11: // lt
-            return getBit(registers[CPSR], 31) != getBit(registers[CPSR], 28);
-        case 12: // gt
-            return !getBit(registers[CPSR], 30) && getBit(registers[CPSR], 31) == getBit(registers[CPSR], 28);
-        case 13: // le
-            return getBit(registers[CPSR], 30) || getBit(registers[CPSR], 31) != getBit(registers[CPSR], 28);
-        case 14: // al
-            return true;
-        default:
-            printf("Error\n");
-            return false;
-    }
-}
-
-struct decodedCode{
-    enum instructionType instructionType;
-    int opcode; // For processing
-    int S; // For processing, multiplying
-    int Rn; // For processing, multiplying, transferring
-    int Rd; // For processing, multiplying, transferring
-    int Rm; // For processing, multiplying, transferring
-    int Rs; // For multiplying
-    int operand2; // For processing
-    int carryOut; // For processing
-    int A; // For multiplying
-    int P; // For transferring
-    int U; // For transferring
-    int L; // For transferring
-    int offset; // For transferring and branch
+enum instructionType {
+    PROCESSING, MULTIPLY, TRANSFER, BRANCH, HALT, INVALID
 };
 
-void decodeProcessing(int binary, struct decodedCode *decodedCode) {
-    (*decodedCode).instructionType = processing;
-    (*decodedCode).opcode = getBitRange(binary, 24, 4);
-    (*decodedCode).S = getBit(binary, 20);
-    (*decodedCode).Rn = getBitRange(binary, 19, 4);
-    (*decodedCode).Rd = getBitRange(binary, 15, 4);
-    if (getBit(binary, 25)) {
-        int rotate = getBitRange(binary, 11, 4);
-        int imm = getBitRange(binary, 7, 8);
-        (*decodedCode).carryOut = (!imm) ? 0 : getBit(imm, 2 * rotate - 1);
-        (*decodedCode).operand2 = rotateRight(imm, 2 * rotate);
-    } else {
-        (*decodedCode).Rm = getBitRange(binary, 3, 4);
-        int shiftType = getBitRange(binary, 6, 2);
-        int shiftValue = (!getBit(binary, 4)) ? getBitRange(binary, 11, 5) : registers[getBitRange(binary, 11,
-                                                                                                       4)];
+struct decodedInstruction {
+    enum instructionType type;
+    uint8_t instruction[8];
+
+};
+
+void fetch(uint32_t pcVal, uint8_t const *memory, uint8_t *instr) {
+    for (int i = 0; i < 4; i++) {
+        instr[i * 2] = memory[pcVal + 3 - i] >> 4;
+        instr[i * 2 + 1] = memory[pcVal + 3 - i] & 0b1111;
+    }
+}
+
+void decode(uint8_t const *instr, struct decodedInstruction *decodedInstr) {
+    int cnt = 0;
+    for (int i = 0; i < 8; i++) {
+        decodedInstr->instruction[i] = instr[i];
+        if (instr[i] == 0) {
+            cnt++;
+        }
+    }
+    if (cnt == 8) {
+        decodedInstr->type = HALT;
+        return;
+    }
+    if (instr[1] < 0b0100) { // Data Processing or Multiply
+        if (instr[6] == 0b1001) { // Multiply
+            decodedInstr->type = MULTIPLY;
+        } else { // Data Processing
+            decodedInstr->type = PROCESSING;
+        }
+    } else { // Single Data Transfer or Branch
+        if (instr[1] == 0b1010) { // Branch
+            decodedInstr->type = BRANCH;
+        } else { // Single Data Transfer
+            decodedInstr->type = TRANSFER;
+        }
+    }
+}
+
+// Get nth bit from 32 bit data
+uint8_t getBit(uint32_t src, uint8_t amt) {
+    return (src >> amt) & 0b1;
+}
+
+// Rotate 32 bit data right
+uint32_t rotateRight32(uint32_t src, uint32_t amt) {
+    return (src >> amt) | (src << (32 - amt));
+}
+
+// Check if Cond satisfies CPSR register [Pg. 4 spec]
+uint8_t isConditionSatisfied(uint32_t cpsr, uint8_t condition) {
+    switch (condition) {
+        case 0: // eq (Z == 1)
+            return getBit(cpsr, 30) == 1;
+        case 1: // ne (Z == 0)
+            return getBit(cpsr, 30) == 0;
+        case 0xa: // ge (N == V)
+            return getBit(cpsr, 31) == getBit(cpsr, 28);
+        case 0xb: // lt (N != V)
+            return getBit(cpsr, 31) != getBit(cpsr, 28);
+        case 0xc: // gt (Z == 0) && (N == V)
+            return (getBit(cpsr, 30) == 0) && (getBit(cpsr, 31) == getBit(cpsr, 28));
+        case 0xd: // le (Z == 1) || (N != V)
+            return (getBit(cpsr, 30) == 1) && (getBit(cpsr, 31) != getBit(cpsr, 28));
+        case 0xe: // al
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+void barrelShift(uint32_t const *registers, uint16_t input,
+                 uint32_t *output, uint8_t *shiftCarry) {
+    uint8_t shift = input >> 4;
+    uint8_t Rm = input & 0xf;
+    uint8_t shiftType = (shift >> 1) & 0b11;
+    uint8_t shiftAmount;
+
+    *output = registers[Rm];
+    if ((shift & 0b1) == 0) { // shift by constant amount
+        shiftAmount = shift >> 3;
+    } else { // shift by a register
+        shiftAmount = registers[shift >> 4] & 0xff;
+    }
+    if (shiftAmount > 0) {
         switch (shiftType) {
-            case 0: // logical left
-                (*decodedCode).carryOut = (!shiftValue) ? 0 : getBit(registers[(*decodedCode).Rm],
-                                                                         31 - shiftValue);
-                (*decodedCode).operand2 = logicalLeft(registers[(*decodedCode).Rm], shiftValue);
+            case 0: // lsl
+                *shiftCarry = getBit(registers[Rm], 32 - shiftAmount);
+                *output = registers[Rm] << shiftAmount;
                 break;
-            case 1: // logical right
-                (*decodedCode).carryOut = (!shiftValue) ? 0 : getBit(registers[(*decodedCode).Rm],
-                                                                         shiftValue - 1);
-                (*decodedCode).operand2 = logicalRight(registers[(*decodedCode).Rm], shiftValue);
+            case 1: // lsr
+                *shiftCarry = getBit(registers[Rm], shiftAmount - 1);
+                *output = registers[Rm] >> shiftAmount;
                 break;
-            case 2: // arithmetic right
-                (*decodedCode).carryOut = (!shiftValue) ? 0 : getBit(registers[(*decodedCode).Rm],
-                                                                         shiftValue - 1);
-                (*decodedCode).operand2 = arithmeticRight(registers[(*decodedCode).Rm], shiftValue);
+            case 2: // asr
+                *shiftCarry = getBit(registers[Rm], shiftAmount - 1);
+                int32_t temp = registers[Rm];
+                temp = temp >> shiftAmount;
+                *output = (uint32_t) temp;
                 break;
-            case 3: // rotate right
-                (*decodedCode).carryOut = (!shiftValue) ? 0 : getBit(registers[(*decodedCode).Rm],
-                                                                         shiftValue - 1);
-                (*decodedCode).operand2 = rotateRight(registers[(*decodedCode).Rm], shiftValue);
+            case 3: // ror
+                *shiftCarry = getBit(registers[Rm], shiftAmount - 1);
+                *output = rotateRight32(registers[Rm], shiftAmount);
                 break;
             default:
-                printf("Error\n");
-
+                break;
         }
     }
 }
 
-void decodeMultiplying(int binary, struct decodedCode *decodedCode) {
-    (*decodedCode).instructionType = multiplying;
-    (*decodedCode).A = getBit(binary, 21);
-    (*decodedCode).S = getBit(binary, 20);
-    (*decodedCode).Rd = getBitRange(binary, 19, 4);
-    (*decodedCode).Rn = getBitRange(binary, 15, 4);
-    (*decodedCode).Rs = getBitRange(binary, 11, 4);
-    (*decodedCode).Rm = getBitRange(binary, 3, 4);
-}
+void executeDataProcessing(uint32_t *registers, uint8_t const *instr) {
+    uint8_t I = (instr[1] >> 1) & 0b1;
+    uint8_t Opcode = ((instr[1] & 0b1) << 3) | (instr[2] >> 1);
+    uint8_t S = instr[2] & 0b1;
+    uint8_t Rn = instr[3];
+    uint8_t Rd = instr[4];
+    uint16_t Operand2 = (instr[5] << 8) | (instr[6] << 4) | instr[7];
 
-void decodeTransfer(int binary, struct decodedCode *decodedCode) {
-    (*decodedCode).instructionType = transfer;
-    (*decodedCode).P = getBit(binary, 24);
-    (*decodedCode).U = getBit(binary, 23);
-    (*decodedCode).L = getBit(binary, 20);
-    (*decodedCode).Rn = getBitRange(binary, 19, 4);
-    (*decodedCode).Rd = getBitRange(binary, 15, 4);
-    if (!getBit(binary, 25)) {
-        (*decodedCode).offset = getBitRange(binary, 11, 12);
+    uint8_t shiftCarry = 0;
+    uint32_t Op2;
+
+    if (I == 1) {
+        uint32_t rotate = (Operand2 >> 8) * 2;
+        uint32_t imm = Operand2 & 0xff;
+
+        shiftCarry = getBit(imm, rotate - 1);
+        Op2 = rotateRight32(imm, rotate);
     } else {
-        (*decodedCode).Rm = getBitRange(binary, 3, 4);
-        int shiftType = getBitRange(binary, 6, 2);
-        if (getBit(binary, 4) && !getBit(binary, 7)) {
-            (*decodedCode).offset = registers[(*decodedCode).Rm];
-        } else {
-            int shiftValue = (!getBit(binary, 4)) ? getBitRange(binary, 11, 5) : registers[getBitRange(binary, 11,
-                                                                                                           4)];
-            switch (shiftType) {
-                case 0: // logical left
-                    (*decodedCode).offset = logicalLeft(registers[(*decodedCode).Rm], shiftValue);
-                    break;
-                case 1: // logical right
-                    (*decodedCode).offset = logicalRight(registers[(*decodedCode).Rm], shiftValue);
-                    break;
-                case 2: // arithmetic right
-                    (*decodedCode).offset = arithmeticRight(registers[(*decodedCode).Rm], shiftValue);
-                    break;
-                case 3: // rotate right
-                    (*decodedCode).offset = rotateRight(registers[(*decodedCode).Rm], shiftValue);
-                    break;
-                default:
-                    printf("Error\n");
-            }
-        }
+        barrelShift(registers, Operand2, &Op2, &shiftCarry);
     }
-}
 
-void decodeBranch(int binary, struct decodedCode *decodedCode) {
-    (*decodedCode).instructionType = branch;
-    (*decodedCode).offset = arithmeticRight(logicalLeft(getBitRange(binary, 23, 24), 8), 6);
-}
-
-void decode(int binary, struct decodedCode *decodedCode) {
-    if (!binary) {
-        (*decodedCode).instructionType = halt;
-    } else {
-        int condInt = getBitRange(binary, 31, 4);
-        if (isConditionValid(condInt)) {
-            // If the 27-th bit is 1 we have a branch
-            if (getBit(binary, 27)) {
-                decodeBranch(binary, decodedCode);
-            }
-                // If the 26-th bit is 1 we have a transfer;
-            else if (getBit(binary, 26)) {
-                decodeTransfer(binary, decodedCode);
-            }
-                // Not 100% sure about the condition for Multiplying
-            else if (getBitRange(binary, 7, 4) == 9) {
-                decodeMultiplying(binary, decodedCode);
-            } else {
-                decodeProcessing(binary, decodedCode);
-            }
-        } else {
-            (*decodedCode).instructionType = invalid;
-        }
-    }
-}
-
-void executeProcessing(struct decodedCode decodedCode) {
-    int result;
-    switch (decodedCode.opcode) {
-        case 0: // and
-            result = registers[decodedCode.Rn] & decodedCode.operand2;
-            registers[decodedCode.Rd] = result;
+    uint8_t carry = 0;
+    uint32_t result = 0;
+    switch (Opcode) {
+        case 0b0000: // and
+            result = registers[Rn] & Op2;
+            registers[Rd] = result;
+            carry = shiftCarry;
             break;
-        case 1: // eor
-            result = registers[decodedCode.Rn] ^ decodedCode.operand2;
-            registers[decodedCode.Rd] = result;
+        case 0b0001: // eor
+            result = registers[Rn] ^ Op2;
+            registers[Rd] = result;
+            carry = shiftCarry;
             break;
-        case 2: // sub
-            result = registers[decodedCode.Rn] - decodedCode.operand2;
-            registers[decodedCode.Rd] = result;
-            if (decodedCode.operand2 > decodedCode.Rn) {
-                decodedCode.carryOut = 0;
-            } else {
-                decodedCode.carryOut = 1;
+        case 0b0010: // sub
+            result = registers[Rn] - Op2;
+            registers[Rd] = result;
+            if (Op2 <= registers[Rn]) {
+                carry = 1;
             }
             break;
-        case 3: // rsb
-            result = decodedCode.operand2 - registers[decodedCode.Rn];
-            registers[decodedCode.Rd] = result;
-            if (decodedCode.operand2 < decodedCode.Rn) {
-                decodedCode.carryOut = 0;
-            } else {
-                decodedCode.carryOut = 1;
+        case 0b0011: // rsb
+            result = Op2 - registers[Rn];
+            registers[Rd] = result;
+            if (registers[Rn] <= Op2) {
+                carry = 1;
             }
             break;
-        case 4: // add
-            result = registers[decodedCode.Rn] + decodedCode.operand2;
-            registers[decodedCode.Rd] = result;
-            if (checkOverflow(registers[decodedCode.Rn], decodedCode.operand2)) {
-                decodedCode.carryOut = 1;
-            } else {
-                decodedCode.carryOut = 0;
+        case 0b0100: // add
+            result = registers[Rn] + Op2;
+            registers[Rd] = result;
+            if (getBit(registers[Rn], 31) == getBit(Op2, 31)
+                && getBit(result, 31) != getBit(Op2, 31)) {
+                carry = 1;
             }
             break;
-        case 8: // tst
-            result = registers[decodedCode.Rn] & decodedCode.operand2;
+        case 0b1000: // tst
+            result = registers[Rn] & Op2;
+            carry = shiftCarry;
             break;
-        case 9: // teq
-            result = registers[decodedCode.Rn] ^ decodedCode.operand2;
+        case 0b1001: // teq
+            result = registers[Rn] ^ Op2;
+            carry = shiftCarry;
             break;
-        case 10: // cmp
-            result = registers[decodedCode.Rn] - decodedCode.operand2;
-            if (decodedCode.operand2 > registers[decodedCode.Rn]) {
-                decodedCode.carryOut = 0;
-            } else {
-                decodedCode.carryOut = 1;
+        case 0b1010: // cmp
+            result = registers[Rn] - Op2;
+            if (Op2 <= registers[Rn]) {
+                carry = 1;
             }
             break;
-        case 12: // orr
-            result = registers[decodedCode.Rn] | decodedCode.operand2;
-            registers[decodedCode.Rd] = result;
+        case 0b1100: // orr
+            result = registers[Rn] | Op2;
+            registers[Rd] = result;
+            carry = shiftCarry;
             break;
-        case 13: // mov
-            result = decodedCode.operand2;
-            registers[decodedCode.Rd] = result;
+        case 0b1101:
+            registers[Rd] = Op2;
+            carry = shiftCarry;
             break;
         default:
-            printf("Error\n");
+            break;
     }
-    if (decodedCode.S) {
-        registers[CPSR] = changeBit(registers[CPSR], 29, decodedCode.carryOut);
-        if (!result) {
-            registers[CPSR] = changeBit(registers[CPSR], 30, 1);
-        } else {
-            registers[CPSR] = changeBit(registers[CPSR], 30, 0);
-        }
-        registers[CPSR] = changeBit(registers[CPSR], 31, getBit(result, 31));
+
+    if (S == 1) {
+        uint32_t cpsr = (getBit(result, 31) << 3) | ((result == 0) << 2)
+                        | (carry << 1) | getBit(registers[CPSR_REF], 28);
+        registers[CPSR_REF] = cpsr << 28;
     }
 }
 
-void executeMultiplying(struct decodedCode decodedCode) {
-    if (!decodedCode.A) {
-        registers[decodedCode.Rd] = registers[decodedCode.Rm] * registers[decodedCode.Rs];
+void executeMultiply(uint32_t *registers, uint8_t const *instr) {
+    uint8_t A = (instr[2] >> 1) & 0b1;
+    uint8_t S = instr[2] & 0b1;
+    uint8_t Rd = instr[3];
+    uint8_t Rn = instr[4];
+    uint8_t Rs = instr[5];
+    uint8_t Rm = instr[7];
+
+    uint32_t result = registers[Rm] * registers[Rs];
+    if (A == 1) {
+        result += registers[Rn];
+    }
+    registers[Rd] = result;
+
+    if (S == 1) {
+        uint32_t cpsr = (getBit(result, 31) << 3) | ((result == 0) << 2)
+                        | (getBit(registers[CPSR_REF], 29) << 1)
+                        | getBit(registers[CPSR_REF], 28);
+        registers[CPSR_REF] = cpsr << 28;
+    }
+}
+
+void executeSingleDataTransfer(uint32_t *registers, uint8_t *memory, uint8_t const *instr) {
+    uint8_t I = (instr[1] >> 1) & 0b1;
+    uint8_t P = instr[1] & 0b1;
+    uint8_t U = (instr[2] >> 3) & 0b1;
+    uint8_t L = instr[2] & 0b1;
+    uint8_t Rn = instr[3];
+    uint8_t Rd = instr[4];
+    uint16_t inputOffset = (instr[5] << 8) | (instr[6] << 4) | instr[7];
+    uint32_t offset = inputOffset;
+    uint32_t address = registers[Rn];
+    uint8_t carry;
+
+    if (I == 1) {
+        barrelShift(registers, inputOffset, &offset, &carry);
+    }
+
+    if (U == 0) {
+        offset = ~offset + 1;
+    }
+
+    if (P == 1) {
+        address += offset;
     } else {
-        registers[decodedCode.Rd] = registers[decodedCode.Rm] * registers[decodedCode.Rs] + registers[decodedCode.Rn];
+        registers[Rn] = address + offset;
     }
-    if (decodedCode.S) {
-        if (!registers[decodedCode.Rd]) {
-            registers[CPSR] = changeBit(registers[CPSR], 30, 1);
-        }
-        registers[CPSR] = changeBit(registers[CPSR], 31, getBit(registers[decodedCode.Rd], 31));
-    }
-}
 
-void executeTransfer(struct decodedCode decodedCode) {
-    int result = (decodedCode.U) ? (registers[decodedCode.Rn] + decodedCode.offset) : (registers[decodedCode.Rn] -
-                                                                                         decodedCode.offset);
-    if (decodedCode.L) { // load
-        if (decodedCode.P) {
-            if (result + 3 > 65536) {
-                printf("Error: Out of bounds memory access at address ");
-                printHexadec(result);
-                printf("\n");
-            } else {
-                registers[decodedCode.Rd] = concat4bytes(memory[result + 3], memory[result + 2], memory[result + 1],
-                                                         memory[result]);
-            }
-        } else {
-            registers[decodedCode.Rd] = concat4bytes(memory[registers[decodedCode.Rn] + 3],
-                                                     memory[registers[decodedCode.Rn] + 2],
-                                                     memory[registers[decodedCode.Rn] + 1],
-                                                     memory[registers[decodedCode.Rn]]);
-            registers[decodedCode.Rn] = result;
-        }
+    if (address + 3 > MEMORY_SIZE) {
+        printf("Error: Out of bounds memory access at address 0x%08x\n", address);
+        return;
+    }
+
+    if (L == 1) {
+        registers[Rd] = memory[address]
+                        | (memory[address + 1] << 8)
+                        | (memory[address + 2] << 16)
+                        | (memory[address + 3] << 24);
     } else {
-        if (decodedCode.P) { // store
-            memory[result] = registers[decodedCode.Rd] & 0xff;
-            memory[result + 1] = (registers[decodedCode.Rd] >> 8) & 0xff;
-            memory[result + 2] = (registers[decodedCode.Rd] >> 16) & 0xff;
-            memory[result + 3] = (registers[decodedCode.Rd] >> 24) & 0xff;
-        } else {
-            memory[registers[decodedCode.Rn]] = registers[decodedCode.Rd] & 0xff;
-            memory[registers[decodedCode.Rn] + 1] = (registers[decodedCode.Rd] >> 8) & 0xff;
-            memory[registers[decodedCode.Rn] + 2] = (registers[decodedCode.Rd] >> 16) & 0xff;
-            memory[registers[decodedCode.Rn] + 3] = (registers[decodedCode.Rd] >> 24) & 0xff;
-            registers[decodedCode.Rn] = result;
-        }
+        memory[address] = registers[Rd] & 0xff;
+        memory[address + 1] = (registers[Rd] >> 8) & 0xff;
+        memory[address + 2] = (registers[Rd] >> 16) & 0xff;
+        memory[address + 3] = (registers[Rd] >> 24) & 0xff;
     }
 }
 
-void executeBranch(struct decodedCode decodedCode) {
-    registers[PC] = registers[PC] + decodedCode.offset;
+void executeBranch(uint32_t *registers, uint8_t const *instr) {
+    uint32_t offset = (instr[2] << 20) | (instr[3] << 16)
+                      | (instr[4] << 12) | (instr[5] << 8)
+                      | (instr[6] << 4) | instr[7];
+    uint8_t sign = (instr[2] >> 3) & 0b1;
+    uint32_t destination = (sign == 1) ? (offset | 0xff000000) : offset;
+
+    destination = destination << 2;
+
+    registers[PC_REF] += destination;
 }
 
+void execute(uint32_t *registers, uint8_t *memory,
+             struct decodedInstruction decodedInstr,
+             uint8_t *branched, uint8_t *finished) {
 
-void execute(struct decodedCode decodedCode) {
-    switch (decodedCode.instructionType) {
-        case halt:
-        case invalid:
+    if (decodedInstr.type == HALT) {
+        *finished = 1;
+        return;
+    }
+
+    uint8_t cond = decodedInstr.instruction[0];
+    if (!isConditionSatisfied(registers[CPSR_REF], cond)) {
+        return;
+    }
+    *branched = 0;
+    switch (decodedInstr.type) {
+        case PROCESSING:
+            executeDataProcessing(registers, decodedInstr.instruction);
             break;
-        case processing:
-            executeProcessing(decodedCode);
+        case MULTIPLY:
+            executeMultiply(registers, decodedInstr.instruction);
             break;
-        case multiplying:
-            executeMultiplying(decodedCode);
+        case TRANSFER:
+            executeSingleDataTransfer(registers, memory, decodedInstr.instruction);
             break;
-        case transfer:
-            executeTransfer(decodedCode);
-            break;
-        case branch:
-            executeBranch(decodedCode);
+        case BRANCH:
+            *branched = 1;
+            executeBranch(registers, decodedInstr.instruction);
             break;
         default:
-            printf("Error\n");
+            break;
     }
 }
 
 int main(int argc, char **argv) {
+
+    uint32_t registers[REGISTERS];
+
+    uint8_t memory[MEMORY_SIZE];
 
     // State of ARM machine when turned on [Pg. 3 Spec]
     for (int i = 0; i < REGISTERS; i++) {
@@ -399,92 +337,70 @@ int main(int argc, char **argv) {
         memory[i] = 0;
     }
 
-    //  LOAD BINARY FILE INTO MEMORY [Copy pasted Ruari's code and changed memory to an integer array instead of string]
-    FILE *binary = fopen(argv[1], "r"); //open file
-    fread(memory, sizeof(unsigned char), MEMORY_SIZE, binary);
-    fclose(binary); //close file
+    // LOAD BINARY FILE INTO MEMORY
+    FILE *binary = fopen(argv[1], "r");
+    fread(memory, sizeof(uint8_t), MEMORY_SIZE, binary);
+    fclose(binary);
 
-    // Pipeline
-    // Changed pc to register[PC] because as far as I understand we should increment the register after
-    // every iteration. Correct me if I am wrong.
-    // First cycle: Fetch
-    int lastFetch;
-    lastFetch = concat4bytes(memory[registers[PC] + 3], memory[registers[PC] + 2], memory[registers[PC] + 1],
-                             memory[registers[PC]]);
-    registers[PC] += 4;
-    // Second cycle: Decode -> Fetch
-    struct decodedCode lastDecode;
-    decode(lastFetch, &lastDecode);
-    lastFetch = concat4bytes(memory[registers[PC] + 3], memory[registers[PC] + 2], memory[registers[PC] + 1],
-                             memory[registers[PC]]);
-    registers[PC] += 4;
-    // Third cycle and onward: Execute -> Decode -> Fetch
-    for (; registers[PC] < 65536; registers[PC] += 4) {
-        // Execute:
-        execute(lastDecode);
+    uint8_t fetchedInstr[8]; // Cond | 4 | 4 | r1 | r2 | 4 | 4 | 4
+    struct decodedInstruction decodedInstr;
+    decodedInstr.type = INVALID; // initialise
 
-        // Decode:
-        // Note that rather than storing the information to a new struct decodeCode, we rewrite the old one which
-        // would mean that if some code is unchanged from the previous iteration, it would remain (for example the
-        // decodedCode for a branch instruction may contain an opcode field). That however is irrelevant because
-        // if our execute function works properly, the irrelevant fields would not be used in any way.
-        // If the executed function was a branch then the next decoded function is invalid thus we have the if statement
-        if (lastDecode.instructionType == halt) {
-            break;
-        } else {
-            if (lastDecode.instructionType == branch) {
-                lastDecode.instructionType = invalid;
-            } else {
-                decode(lastFetch, &lastDecode);
+    uint8_t fetched = 0;
+    uint8_t decoded = 0;
+    uint8_t finished = 0;
+    uint8_t branched = 0;
+
+    while (registers[PC_REF] < MEMORY_SIZE) {
+        // EXECUTE INSTRUCTION
+        if (decoded) {
+            execute(registers, memory, decodedInstr, &branched, &finished);
+            decoded = 0;
+            if (branched) {
+                fetched = 0;
             }
         }
 
-        // Fetch:
-        lastFetch = concat4bytes(memory[registers[PC] + 3], memory[registers[PC] + 2], memory[registers[PC] + 1],
-                                 memory[registers[PC]]);
+        // DECODE INSTRUCTION
+        if (fetched) {
+            decode(fetchedInstr, &decodedInstr);
+            fetched = 0;
+            decoded = 1;
+        }
 
+        // FETCH INSTRUCTION
+        if (!finished) {
+            fetch(registers[PC_REF], memory, fetchedInstr);
+            fetched = 1;
+
+            // NEXT INSTRUCTION
+            registers[PC_REF] += 4;
+        }
+
+        if (finished && !decoded) {
+            break;
+        }
     }
 
-    //Output
+    // OUTPUT
+
+    // Print registers
     printf("Registers:\n");
-    for (int k = 0; k < 13; k++) {
-        printf("$");
-        printf("%-3d", k);
-        printf(":");
-        if (registers[k] < -1000000000) {
-            printf(" ");
-        }
-        printf("%11d", registers[k]);
-        printf(" (");
-        printHexadec(registers[k]);
-        printf(")\n");
+    for (int i = 0; i < 13; i++) {
+        printf("$%-3d: %10d (0x%08x)\n", i, registers[i], registers[i]);
     }
-    printf("PC  :");
-    if (registers[PC] < -1000000000) {
-        printf(" ");
-    }
-    printf("%11d", registers[PC]);
-    printf(" (");
-    printHexadec(registers[PC]);
-    printf(")\n");
-    printf("CPSR:");
-    if (registers[CPSR] < -1000000000) {
-        printf(" ");
-    }
-    printf("%11d", registers[CPSR]);
-    printf(" (");
-    printHexadec(registers[CPSR]);
-    printf(")\n");
+    printf("PC  : %10d (0x%08x)\n", registers[PC_REF], registers[PC_REF]);
+    printf("CPSR: %10d (0x%08x)\n", registers[CPSR_REF], registers[CPSR_REF]);
+
+    // Print non-zero memory
     printf("Non-zero memory:\n");
-    for (int j = 0; j < 65536; j += 4) {
-        int result = concat4bytes(memory[j], memory[j + 1], memory[j + 2], memory[j + 3]);
-        if (result != 0) {
-            printHexadec(j);
-            printf(": ");
-            printHexadec(result);
-            printf("\n");
+    for (uint32_t i = 0; i < MEMORY_SIZE; i += 4) {
+        int32_t mem = (memory[i] << 24) | (memory[i + 1] << 16)
+                      | (memory[i + 2] << 8) | memory[i + 3];
+        if (mem != 0) {
+            printf("0x%08x: 0x%08x\n", i, mem);
         }
     }
 
-    return EXIT_SUCCESS;
+    return 0;
 }
