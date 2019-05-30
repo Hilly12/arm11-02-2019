@@ -12,9 +12,9 @@ BYTE * instructionsToMemory(BYTE *memory, int *instructions) {
         instrBuffer = instructions[i];
 
         memory[4*i]     = (instrBuffer & 0xFF);
-        memory[4*i + 1] = ((instrBuffer>>8)&0xFF);
-        memory[4*i + 2] = ((instrBuffer>>16)&0xFF);
-        memory[4*i + 3] = ((instrBuffer>>24)&0xFF);
+        memory[4*i + 1] = ((instrBuffer >> 8) & 0xFF);
+        memory[4*i + 2] = ((instrBuffer >> 16) & 0xFF);
+        memory[4*i + 3] = ((instrBuffer >> 24) & 0xFF);
     }
 
     return memory;
@@ -25,12 +25,11 @@ BYTE * instructionsToMemory(BYTE *memory, int *instructions) {
 int main(int argc, char **argv) {
     //TODO: Load file in
     FILE *fileIn;
-    //fileIn = fopen(argv[1], "r");
+    fileIn = fopen(argv[1], "r");
 
-    //TODO: Create array where each element is a differnt instruction
+    //TODO: Create array where each element is a different instruction
 
     //TODO: Generate symbol table
-
 
     //TODO: Generate binary encoding for each line
 
