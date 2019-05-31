@@ -79,10 +79,8 @@ int main(int argc, char **argv) {
     fileOut = fopen(argv[2], "w+");
     BYTE memory[sizeof(instructions)];
     BYTE *output = instructionsToMemory(memory, instructions);
-
     fwrite(output, sizeof(memory), 1, fileOut);
     fclose(fileOut);
-
-
+    
     return EXIT_SUCCESS;
 }
