@@ -20,7 +20,7 @@ struct decodedInstruction {
 void fetch(uint32_t pcVal, uint8_t const *memory, uint8_t *instr) {
     for (int i = 0; i < 4; i++) {
         instr[i * 2] = memory[pcVal + 3 - i] >> 4;
-        instr[i * 2 + 1] = memory[pcVal + 3 - i] & 0b1111;
+        instr[i * 2 + 1] = memory[pcVal + 3 - i] & 0xf;
     }
 }
 
@@ -36,14 +36,14 @@ void decode(uint8_t const *instr, struct decodedInstruction *decodedInstr) {
         decodedInstr->type = HALT;
         return;
     }
-    if (instr[1] < 0b0100) { // Data Processing or Multiply
-        if (instr[6] == 0b1001) { // Multiply
+    if (instr[1] < 0x4) { // Data Processing or Multiply
+        if (instr[6] == 0x9) { // Multiply
             decodedInstr->type = MULTIPLY;
         } else { // Data Processing
             decodedInstr->type = PROCESSING;
         }
     } else { // Single Data Transfer or Branch
-        if (instr[1] == 0b1010) { // Branch
+        if (instr[1] == 0xa) { // Branch
             decodedInstr->type = BRANCH;
         } else { // Single Data Transfer
             decodedInstr->type = TRANSFER;
@@ -53,7 +53,7 @@ void decode(uint8_t const *instr, struct decodedInstruction *decodedInstr) {
 
 // Get nth bit from 32 bit data
 uint8_t getBit(uint32_t src, uint8_t amt) {
-    return (src >> amt) & 0b1;
+    return (src >> amt) & 0x1;
 }
 
 // Rotate 32 bit data right
@@ -64,9 +64,9 @@ uint32_t rotateRight32(uint32_t src, uint32_t amt) {
 // Check if Cond satisfies CPSR register [Pg. 4 spec]
 uint8_t isConditionSatisfied(uint32_t cpsr, uint8_t condition) {
     switch (condition) {
-        case 0: // eq (Z == 1)
+        case 0x0: // eq (Z == 1)
             return getBit(cpsr, 30) == 1;
-        case 1: // ne (Z == 0)
+        case 0x1: // ne (Z == 0)
             return getBit(cpsr, 30) == 0;
         case 0xa: // ge (N == V)
             return getBit(cpsr, 31) == getBit(cpsr, 28);
@@ -87,32 +87,30 @@ void barrelShift(uint32_t const *registers, uint16_t input,
                  uint32_t *output, uint8_t *shiftCarry) {
     uint8_t shift = input >> 4;
     uint8_t Rm = input & 0xf;
-    uint8_t shiftType = (shift >> 1) & 0b11;
+    uint8_t shiftType = (shift >> 1) & 0x3;
     uint8_t shiftAmount;
 
     *output = registers[Rm];
-    if ((shift & 0b1) == 0) { // shift by constant amount
+    if ((shift & 0x1) == 0) { // shift by constant amount
         shiftAmount = shift >> 3;
     } else { // shift by a register
         shiftAmount = registers[shift >> 4] & 0xff;
     }
     if (shiftAmount > 0) {
         switch (shiftType) {
-            case 0: // lsl
+            case 0x0: // lsl
                 *shiftCarry = getBit(registers[Rm], 32 - shiftAmount);
                 *output = registers[Rm] << shiftAmount;
                 break;
-            case 1: // lsr
+            case 0x1: // lsr
                 *shiftCarry = getBit(registers[Rm], shiftAmount - 1);
                 *output = registers[Rm] >> shiftAmount;
                 break;
-            case 2: // asr
+            case 0x2: // asr
                 *shiftCarry = getBit(registers[Rm], shiftAmount - 1);
-                int32_t temp = registers[Rm];
-                temp = temp >> shiftAmount;
-                *output = (uint32_t) temp;
+                *output = (uint32_t) (((int32_t) registers[Rm]) >> shiftAmount);
                 break;
-            case 3: // ror
+            case 0x3: // ror
                 *shiftCarry = getBit(registers[Rm], shiftAmount - 1);
                 *output = rotateRight32(registers[Rm], shiftAmount);
                 break;
@@ -123,9 +121,9 @@ void barrelShift(uint32_t const *registers, uint16_t input,
 }
 
 void executeDataProcessing(uint32_t *registers, uint8_t const *instr) {
-    uint8_t I = (instr[1] >> 1) & 0b1;
-    uint8_t Opcode = ((instr[1] & 0b1) << 3) | (instr[2] >> 1);
-    uint8_t S = instr[2] & 0b1;
+    uint8_t I = (instr[1] >> 1) & 0x1;
+    uint8_t Opcode = ((instr[1] & 0x1) << 3) | (instr[2] >> 1);
+    uint8_t S = instr[2] & 0x1;
     uint8_t Rn = instr[3];
     uint8_t Rd = instr[4];
     uint16_t Operand2 = (instr[5] << 8) | (instr[6] << 4) | instr[7];
@@ -146,31 +144,31 @@ void executeDataProcessing(uint32_t *registers, uint8_t const *instr) {
     uint8_t carry = 0;
     uint32_t result = 0;
     switch (Opcode) {
-        case 0b0000: // and
+        case 0x0: // and
             result = registers[Rn] & Op2;
             registers[Rd] = result;
             carry = shiftCarry;
             break;
-        case 0b0001: // eor
+        case 0x1: // eor
             result = registers[Rn] ^ Op2;
             registers[Rd] = result;
             carry = shiftCarry;
             break;
-        case 0b0010: // sub
+        case 0x2: // sub
             result = registers[Rn] - Op2;
             registers[Rd] = result;
             if (Op2 <= registers[Rn]) {
                 carry = 1;
             }
             break;
-        case 0b0011: // rsb
+        case 0x3: // rsb
             result = Op2 - registers[Rn];
             registers[Rd] = result;
             if (registers[Rn] <= Op2) {
                 carry = 1;
             }
             break;
-        case 0b0100: // add
+        case 0x4: // add
             result = registers[Rn] + Op2;
             registers[Rd] = result;
             if (getBit(registers[Rn], 31) == getBit(Op2, 31)
@@ -178,26 +176,26 @@ void executeDataProcessing(uint32_t *registers, uint8_t const *instr) {
                 carry = 1;
             }
             break;
-        case 0b1000: // tst
+        case 0x8: // tst
             result = registers[Rn] & Op2;
             carry = shiftCarry;
             break;
-        case 0b1001: // teq
+        case 0x9: // teq
             result = registers[Rn] ^ Op2;
             carry = shiftCarry;
             break;
-        case 0b1010: // cmp
+        case 0xa: // cmp
             result = registers[Rn] - Op2;
             if (Op2 <= registers[Rn]) {
                 carry = 1;
             }
             break;
-        case 0b1100: // orr
+        case 0xc: // orr
             result = registers[Rn] | Op2;
             registers[Rd] = result;
             carry = shiftCarry;
             break;
-        case 0b1101:
+        case 0xd:
             registers[Rd] = Op2;
             carry = shiftCarry;
             break;
@@ -213,8 +211,8 @@ void executeDataProcessing(uint32_t *registers, uint8_t const *instr) {
 }
 
 void executeMultiply(uint32_t *registers, uint8_t const *instr) {
-    uint8_t A = (instr[2] >> 1) & 0b1;
-    uint8_t S = instr[2] & 0b1;
+    uint8_t A = (instr[2] >> 1) & 0x1;
+    uint8_t S = instr[2] & 0x1;
     uint8_t Rd = instr[3];
     uint8_t Rn = instr[4];
     uint8_t Rs = instr[5];
@@ -235,10 +233,10 @@ void executeMultiply(uint32_t *registers, uint8_t const *instr) {
 }
 
 void executeSingleDataTransfer(uint32_t *registers, uint8_t *memory, uint8_t const *instr) {
-    uint8_t I = (instr[1] >> 1) & 0b1;
-    uint8_t P = instr[1] & 0b1;
-    uint8_t U = (instr[2] >> 3) & 0b1;
-    uint8_t L = instr[2] & 0b1;
+    uint8_t I = (instr[1] >> 1) & 0x1;
+    uint8_t P = instr[1] & 0x1;
+    uint8_t U = (instr[2] >> 3) & 0x1;
+    uint8_t L = instr[2] & 0x1;
     uint8_t Rn = instr[3];
     uint8_t Rd = instr[4];
     uint16_t inputOffset = (instr[5] << 8) | (instr[6] << 4) | instr[7];
@@ -282,12 +280,7 @@ void executeBranch(uint32_t *registers, uint8_t const *instr) {
     uint32_t offset = (instr[2] << 20) | (instr[3] << 16)
                       | (instr[4] << 12) | (instr[5] << 8)
                       | (instr[6] << 4) | instr[7];
-    uint8_t sign = (instr[2] >> 3) & 0b1;
-    uint32_t destination = (sign == 1) ? (offset | 0xff000000) : offset;
-
-    destination = destination << 2;
-
-    registers[PC_REF] += destination;
+    registers[PC_REF] += (uint32_t) (((int32_t) (offset << 8)) >> 6);
 }
 
 void execute(uint32_t *registers, uint8_t *memory,
