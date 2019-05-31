@@ -20,21 +20,61 @@ BYTE * instructionsToMemory(BYTE *memory, int *instructions) {
     return memory;
 }
 
+int commandToInstruction(char *instruction) { //should also include the symbol table
+    //TODO: Get mnemonic from the start of the instruction
+
+    //TODO: Work out which instruction it is and format (Big switch case?)
+
+    //TODO: Create binary encoding based on instruction and format
+    //Formats have common elements so use functions to set those specific bits
+    //For the branch instructions have to use the symbol table to get address, lookup function needed;
+    //Optional: Function needed to work out operand 2 for shifted register case
+
+    int binaryInstruction = 0;
+
+
+    return binaryInstruction;
+}
+
+
+
 
 
 int main(int argc, char **argv) {
     //TODO: Load file in
+    //Pre: A file holding instructions
+    //Post: File stored in memory
     FILE *fileIn;
     fileIn = fopen(argv[1], "r");
+    //Read in
+    fclose(fileIn);
+
 
     //TODO: Create array where each element is a different instruction
+    //Pre: File is in memory
+    //Post: An array of instructions in string format split at \n or \0
 
-    //TODO: Generate symbol table
+    char instructionsStr[][];
 
-    //TODO: Generate binary encoding for each line
+    //TODO: Generate symbol table (Pass 1)
+    //Pre: An array of instructions in string format
+    //Post: An ADT holding a symbol table
+
+    //Idea for symbol table is to create a linked list of label and address pairs
+
+    //TODO: Generate binary encoding for each line (Pass 2)
+    //Pre: Array of instructions and a adt holding a symbol table
+    //Post: An array of binary instructions
+
+    int instructions[sizeof(instructionsStr) / sizeof(instructionsStr[0]]
 
 
-    //Given an array of instructions, saves to a binary file how it would be represented in memory
+    for( i = 0; i < sizeof(instructionsStr) / sizeof(instructionsStr[0]); i++)
+    {
+        instructions[i] = commandToInstruction(instructionsStr[i]);
+    }
+
+    //Given an array of binary instructions, saves to a binary file how it would be represented in memory
     FILE *fileOut;
     fileOut = fopen(argv[2], "w+");
     BYTE memory[sizeof(instructions)];
