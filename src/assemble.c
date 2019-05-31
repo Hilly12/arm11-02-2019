@@ -33,6 +33,27 @@ void saveToFile(char * filename, int *instructions) {
     fclose(fileOut);
 }
 
+int getNumberOfLines(FILE *file) {
+    int lines = 0;
+    int ch = 0;
+    while(!feof(file))
+    {
+        ch = fgetc(file);
+        if(ch == '\n' | ch == EOF)
+        {
+            lines++;
+        }
+    }
+    rewind(file);
+    return lines;
+}
+
+void fileToArrayLineByLine(int noLines, int lineLength, FILE *file, char lines[][lineLength]) {
+    for (int i = 0; i < noLines; i++) {
+        fgets(lines[i], lineLength, file);
+    }
+}
+
 
 
 
@@ -60,27 +81,10 @@ int main(int argc, char **argv) {
     //Load file into array
     FILE *fileIn;
     fileIn = fopen(argv[1], "r");
-    int lines = 0;
-    int ch = 0;
-    while(!feof(fileIn))
-    {
-        ch = fgetc(fileIn);
-        if(ch == '\n' | ch == EOF)
-        {
-            lines++;
-        }
-    }
-    rewind(fileIn);
-
+    int lines = getNumberOfLines(fileIn);
     char instructionsStr[lines][LINELENGTH];
-    char lineBuffer[LINELENGTH];
-
-    for (int i = 0; i < lines; i++) {
-        fgets(instructionsStr[i], LINELENGTH, fileIn);
-    }
-
+    fileToArrayLineByLine(lines, LINELENGTH, fileIn, instructionsStr);
     fclose(fileIn);
-
 
     //TODO: Generate symbol table (Pass 1)
     //Pre: An array of instructions in string format
@@ -92,7 +96,6 @@ int main(int argc, char **argv) {
     //Post: An array of binary instructions
 
     int instructions[lines];
-
 
     for(int i = 0; i < lines; i++)
     {
