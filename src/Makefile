@@ -1,17 +1,21 @@
 CC      = gcc
-CFLAGS  = -Wall -g -D_POSIX_SOURCE -D_BSD_SOURCE -std=c99 -Werror -pedantic
+CFLAGS  = -Wall -g -DEFAULT_SOURCE -std=c99 -pedantic
+DEPS    = pipeline.h execute.h utils.h definitions.h
+OBJ     = emulate.o pipeline.o execute.o utils.o
+LIBS    = -lm
 
 .SUFFIXES: .c .o
 
 .PHONY: all clean
 
-all: assemble emulate
+%.o: %.c $(DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
 
-assemble: assemble.o
+all: emulate
 
-emulate: emulate.o
+emulate: $(OBJ)
+	$(CC) $(OBJ) -o emulate $(CFLAGS) $(LIBS)
 
 clean:
 	rm -f $(wildcard *.o)
-	rm -f assemble
 	rm -f emulate
