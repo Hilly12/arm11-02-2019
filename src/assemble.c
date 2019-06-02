@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+#define LINELENGTH 511
+
 typedef unsigned char BYTE;
 
 //Function that converts an array of instructions to an array of bytes
@@ -19,6 +22,40 @@ BYTE * instructionsToMemory(BYTE *memory, int *instructions) {
 
     return memory;
 }
+
+//Given an array of binary instructions, saves to a binary file how it would be represented in memory
+void saveToFile(char * filename, int *instructions) {
+    FILE *fileOut;
+    fileOut = fopen(filename, "w+");
+    BYTE memory[sizeof(instructions)];
+    BYTE *output = instructionsToMemory(memory, instructions);
+    fwrite(output, sizeof(memory), 1, fileOut);
+    fclose(fileOut);
+}
+
+int getNumberOfLines(FILE *file) {
+    int lines = 0;
+    int ch = 0;
+    while(!feof(file))
+    {
+        ch = fgetc(file);
+        if(ch == '\n' | ch == EOF)
+        {
+            lines++;
+        }
+    }
+    rewind(file);
+    return lines;
+}
+
+void fileToArrayLineByLine(int noLines, int lineLength, FILE *file, char lines[][lineLength]) {
+    for (int i = 0; i < noLines; i++) {
+        fgets(lines[i], lineLength, file);
+    }
+}
+
+
+
 
 int commandToInstruction(char *instruction) { //should also include the symbol table
     //TODO: Get mnemonic from the start of the instruction
@@ -41,46 +78,32 @@ int commandToInstruction(char *instruction) { //should also include the symbol t
 
 
 int main(int argc, char **argv) {
-    //TODO: Load file in
-    //Pre: A file holding instructions
-    //Post: File stored in memory
+    //Load file into array
     FILE *fileIn;
     fileIn = fopen(argv[1], "r");
-    //Read in
+    int lines = getNumberOfLines(fileIn);
+    char instructionsStr[lines][LINELENGTH];
+    fileToArrayLineByLine(lines, LINELENGTH, fileIn, instructionsStr);
     fclose(fileIn);
-
-
-    //TODO: Create array where each element is a different instruction
-    //Pre: File is in memory
-    //Post: An array of instructions in string format split at \n or \0
-
-    char instructionsStr[][];
 
     //TODO: Generate symbol table (Pass 1)
     //Pre: An array of instructions in string format
     //Post: An ADT holding a symbol table
 
-    //Idea for symbol table is to create a linked list of label and address pairs
 
     //TODO: Generate binary encoding for each line (Pass 2)
     //Pre: Array of instructions and a adt holding a symbol table
     //Post: An array of binary instructions
 
-    int instructions[sizeof(instructionsStr) / sizeof(instructionsStr[0]]
+    int instructions[lines];
 
-
-    for( i = 0; i < sizeof(instructionsStr) / sizeof(instructionsStr[0]); i++)
+    for(int i = 0; i < lines; i++)
     {
         instructions[i] = commandToInstruction(instructionsStr[i]);
     }
 
-    //Given an array of binary instructions, saves to a binary file how it would be represented in memory
-    FILE *fileOut;
-    fileOut = fopen(argv[2], "w+");
-    BYTE memory[sizeof(instructions)];
-    BYTE *output = instructionsToMemory(memory, instructions);
-    fwrite(output, sizeof(memory), 1, fileOut);
-    fclose(fileOut);
-    
+    //Save file
+    saveToFile(argv[2], instructions);
+
     return EXIT_SUCCESS;
 }
