@@ -1,48 +1,42 @@
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#include "symbolTable.h"
 
-typedef struct entry {
+struct entry {
 
     char *label;
     uint32_t address;
     struct entry *next;
 
-} entry;
+};
 
-typedef struct symbolTable {
+struct symbolTable {
 
-    entry *head;
-    entry *tail;
+    Entry *head;
     uint32_t size;
 
-} symbolTable;
+};
 
-symbolTable *createTable(void) {
-    symbolTable *symTable = malloc(sizeof(symbolTable));
+SymbolTable *createTable(void) {
+    SymbolTable *symTable = malloc(sizeof(SymbolTable));
     symTable->head = NULL;
-    symTable->tail = NULL;
     symTable->size = 0;
     return symTable;
 }
 
-void addEntry(symbolTable *symTable, char *label, uint32_t address) {
-    entry *e = malloc(sizeof(entry));
+void addEntry(SymbolTable *symTable, char *label, uint32_t address) {
+    Entry *e = malloc(sizeof(Entry));
     e->label = label;
     e->address = address;
-    if (symTable->size == 0) {
-        symTable->head = e;
-        symTable->tail = e;
-    } else {
-        symTable->tail->next = e;
-        symTable->tail = e;
-    }
+
+    e->next = symTable->head;
+    symTable->head = e;
+
     symTable->size += 1;
+
 }
 
 
-uint32_t getAddress(symbolTable const *symTable, char *label) {
-    entry *current = symTable->head;
+uint32_t getAddress(SymbolTable const *symTable, char *label) {
+    Entry *current = symTable->head;
     while (current != NULL) {
         if (strcmp(current->label, label) == 0) {
             return current->address;
