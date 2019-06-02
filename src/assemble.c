@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "symbolTable.h"
+
 #define LINELENGTH 511
 
 typedef unsigned char BYTE;
@@ -39,7 +41,7 @@ int getNumberOfLines(FILE *file) {
     while(!feof(file))
     {
         ch = fgetc(file);
-        if(ch == '\n' | ch == EOF)
+        if((ch == '\n' ) | (ch == EOF))
         {
             lines++;
         }
@@ -86,9 +88,37 @@ int main(int argc, char **argv) {
     fileToArrayLineByLine(lines, LINELENGTH, fileIn, instructionsStr);
     fclose(fileIn);
 
-    //TODO: Generate symbol table (Pass 1)
-    //Pre: An array of instructions in string format
-    //Post: An ADT holding a symbol table
+    //Generate symbol table (Pass 1)
+    SymbolTable * s = createTable();
+    char label[LINELENGTH];
+    memset(label, 0, sizeof label);
+    for(int i = 0; i < lines; i++)
+    {
+        //For each instruction remove and new line characters
+        for(int j = 0; j < LINELENGTH; j++)
+        {
+            if(instructionsStr[i][j]=='\n')
+            {
+                instructionsStr[i][j]='\0';
+            }
+
+        }
+        //Reset the label buffer
+        memset(label, 0, sizeof label);
+
+        //Saves the address of a line if its in the format of a label
+        for (int j = 0; j < LINELENGTH; j++) {
+            if (instructionsStr[i][j] == ':') {
+                label[j] = '\0';
+                addEntry(s, label, i * 4);
+                break;
+            } else if (instructionsStr[i][j] == ' ') {
+                break;
+            } else {
+                label[j] = instructionsStr[i][j];
+            }
+        }
+    }
 
 
     //TODO: Generate binary encoding for each line (Pass 2)

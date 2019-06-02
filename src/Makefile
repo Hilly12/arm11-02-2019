@@ -1,7 +1,9 @@
 CC      = gcc
 CFLAGS  = -Wall -g -DEFAULT_SOURCE -std=c99 -pedantic
 DEPS    = pipeline.h execute.h utils.h definitions.h
+DEPSAS  = symbolTable.h
 OBJ     = emulate.o pipeline.o execute.o utils.o
+OBJAS   = assemble.o symbolTable.o
 LIBS    = -lm
 
 .SUFFIXES: .c .o
@@ -11,11 +13,18 @@ LIBS    = -lm
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-all: emulate
+%.o: %.c $(DEPSAS)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+all: emulate assemble
 
 emulate: $(OBJ)
 	$(CC) $(OBJ) -o emulate $(CFLAGS) $(LIBS)
 
+assemble: $(OBJAS)
+	$(CC) $(OBJAS) -o assemble $(CFLAGS) $(LIBS)
+
 clean:
 	rm -f $(wildcard *.o)
 	rm -f emulate
+	rm -f assemble
