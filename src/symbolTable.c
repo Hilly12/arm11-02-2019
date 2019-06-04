@@ -1,23 +1,19 @@
 #include "symbolTable.h"
 
 struct entry {
-
     char *label;
     uint32_t address;
-    struct entry *next;
-
+    struct entry *prev;
 };
 
 struct symbolTable {
-
-    Entry *head;
+    Entry *tail;
     uint32_t size;
-
 };
 
 SymbolTable *createTable(void) {
     SymbolTable *symTable = malloc(sizeof(SymbolTable));
-    symTable->head = NULL;
+    symTable->tail = NULL;
     symTable->size = 0;
     return symTable;
 }
@@ -27,21 +23,20 @@ void addEntry(SymbolTable *symTable, char *label, uint32_t address) {
     e->label = label;
     e->address = address;
 
-    e->next = symTable->head;
-    symTable->head = e;
+    e->prev = symTable->tail;
+    symTable->tail = e;
 
     symTable->size += 1;
 
 }
 
-
 uint32_t getAddress(SymbolTable const *symTable, char *label) {
-    Entry *current = symTable->head;
+    Entry *current = symTable->tail;
     while (current != NULL) {
         if (strcmp(current->label, label) == 0) {
             return current->address;
         }
-        current = current->next;
+        current = current->prev;
     }
     perror("Label does not exist");
     return EXIT_FAILURE;

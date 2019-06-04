@@ -1,66 +1,35 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "symbolTable.h"
+#include "ioManager.h"
 
-#define LINELENGTH 511
+#define MAX_LINE_LENGTH 511
 
-typedef unsigned char BYTE;
+typedef struct instruction {
+    char *mnemonic;
+    uint8_t Rn;
+    uint8_t Rd;
+    uint8_t Rs;
+    uint8_t Rm;
+    uint8_t Opcode;
+    uint8_t A;
+    uint8_t S;
+    uint8_t I;
+    uint8_t P;
+    uint8_t U;
+    uint8_t L;
+    uint16_t Op2;
+} instruction;
 
-//Function that converts an array of instructions to an array of bytes
-//in the style that appears to how it does in memory
-BYTE * instructionsToMemory(BYTE *memory, int *instructions) {
-    size_t n = sizeof(instructions) / sizeof(int);
-    int instrBuffer;
-    for (int i = 0; i < n; ++i) {
-        instrBuffer = instructions[i];
-
-        memory[4*i]     = (instrBuffer & 0xFF);
-        memory[4*i + 1] = ((instrBuffer >> 8) & 0xFF);
-        memory[4*i + 2] = ((instrBuffer >> 16) & 0xFF);
-        memory[4*i + 3] = ((instrBuffer >> 24) & 0xFF);
-    }
-
-    return memory;
-}
-
-//Given an array of binary instructions, saves to a binary file how it would be represented in memory
-void saveToFile(char * filename, int *instructions) {
-    FILE *fileOut;
-    fileOut = fopen(filename, "w+");
-    BYTE memory[sizeof(instructions)];
-    BYTE *output = instructionsToMemory(memory, instructions);
-    fwrite(output, sizeof(memory), 1, fileOut);
-    fclose(fileOut);
-}
-
-int getNumberOfLines(FILE *file) {
-    int lines = 0;
-    int ch = 0;
-    while(!feof(file))
-    {
-        ch = fgetc(file);
-        if((ch == '\n' ) | (ch == EOF))
-        {
-            lines++;
-        }
-    }
-    rewind(file);
-    return lines;
-}
-
-void fileToArrayLineByLine(int noLines, int lineLength, FILE *file, char lines[][lineLength]) {
-    for (int i = 0; i < noLines; i++) {
-        fgets(lines[i], lineLength, file);
-    }
-}
+uint32_t processInstruction(char *code, SymbolTable* symbolTable) {
+    uint32_t binaryInstruction = 0;
 
 
-
-
-int commandToInstruction(char *instruction) { //should also include the symbol table
     //TODO: Get mnemonic from the start of the instruction
+
 
     //TODO: Work out which instruction it is and format (Big switch case?)
 
@@ -69,54 +38,67 @@ int commandToInstruction(char *instruction) { //should also include the symbol t
     //For the branch instructions have to use the symbol table to get address, lookup function needed;
     //Optional: Function needed to work out operand 2 for shifted register case
 
-    int binaryInstruction = 0;
-
-
     return binaryInstruction;
 }
 
-
-
-
+// Uses array of pointers to point to 
+char **init2dCharArray(int rows, int cols) {
+    char **res = (char **) malloc(rows * sizeof(char *));
+    res[0] = (char *) malloc(rows * cols * sizeof(char));
+    for (int i = 1; i < rows; i++) {
+        res[i] = res[i - 1] + cols;
+    }
+    return res;
+}
 
 int main(int argc, char **argv) {
-    //Load file into array
-    FILE *fileIn;
-    fileIn = fopen(argv[1], "r");
-    int lines = getNumberOfLines(fileIn);
-    char instructionsStr[lines][LINELENGTH];
-    fileToArrayLineByLine(lines, LINELENGTH, fileIn, instructionsStr);
-    fclose(fileIn);
+    // Load file into array
+    // FILE *fileIn;
+    // fileIn = fopen(argv[1], "r");
+    // fclose(fileIn);
+    // const int numLines = getNumberOfLines(fileIn);
 
-    //Generate symbol table (Pass 1)
-    SymbolTable * s = createTable();
-    char label[LINELENGTH];
-    memset(label, 0, sizeof label);
-    for(int i = 0; i < lines; i++)
-    {
-        //For each instruction remove and new line characters
-        for(int j = 0; j < LINELENGTH; j++)
-        {
-            if(instructionsStr[i][j]=='\n')
-            {
-                instructionsStr[i][j]='\0';
-            }
+    int numLines = 0;
+    char *data;
 
-        }
-        //Reset the label buffer
-        memset(label, 0, sizeof label);
+    loadFile(argv, MAX_LINE_LENGTH, &numLines, data);
 
-        //Saves the address of a line if its in the format of a label
-        for (int j = 0; j < LINELENGTH; j++) {
-            if (instructionsStr[i][j] == ':') {
-                label[j] = '\0';
-                addEntry(s, label, i * 4);
-                break;
-            } else if (instructionsStr[i][j] == ' ') {
-                break;
-            } else {
-                label[j] = instructionsStr[i][j];
-            }
+    char **instructionsStrArray = init2dCharArray(numLines, MAX_LINE_LENGTH);
+    fileToArrayLineByLine(numLines, MAX_LINE_LENGTH, data, instructionsStrArray);
+
+    // Generate symbol table (Pass 1)
+    SymbolTable *symbolTable = createTable();
+    char *label = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
+    char label[MAX_LINE_LENGTH];
+    int address = 0;
+    // memset(label, 0, sizeof(label));
+    for (int i = 0; i < numLines; i++) {
+        // // For each instruction remove and new line characters
+        // for (int j = 0; j < MAX_LINE_LENGTH; j++) {
+        //     if (instructionsStr[i][j] == '\n') {
+        //         instructionsStr[i][j] = '\0';
+        //     }
+        // }
+        // Reset the label buffer
+        // memset(label, 0, sizeof label);
+        // // Saves the address of a line if its in the format of a label
+        // for (int j = 0; j < MAX_LINE_LENGTH; j++) {
+        //     if (instructionsStr[i][j] == ':') {
+        //         label[j] = '\0';
+        //         addEntry(s, label, i * 4);
+        //         break;
+        //     } else if (instructionsStr[i][j] == ' ') {
+        //         break;
+        //     } else {
+        //         label[j] = instructionsStr[i][j];
+        //     }
+        // }
+        if (strstr(instructionsStrArray, ":") != NULL) { // If ':' is in the line
+            label = strdup(instructionsStrArray[i]);
+            label[strlen(label) - 1] = '\0';
+            addEntry(symbolTable, label, address * 4);
+        } else {
+            address++;
         }
     }
 
@@ -125,14 +107,15 @@ int main(int argc, char **argv) {
     //Pre: Array of instructions and a adt holding a symbol table
     //Post: An array of binary instructions
 
-    int instructions[lines];
+    uint32_t * instructions;
 
-    for(int i = 0; i < lines; i++)
-    {
-        instructions[i] = commandToInstruction(instructionsStr[i]);
+    for (int i = 0; i < numLines; i++) {
+        if (strstr(instructionsStrArray, ":") == NULL) {
+            instructions[i] = processInstruction(instructionsStrArray[i], symbolTable);
+        }
     }
 
-    //Save file
+    // Save file
     saveToFile(argv[2], instructions);
 
     return EXIT_SUCCESS;
