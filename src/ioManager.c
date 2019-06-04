@@ -14,14 +14,15 @@ void loadFile(char **argv, int maxLineLength, int *numLines, char* data) {
         }
     }
     rewind(file);
-
-    fread(data, sizeof(char), lines * maxLineLength, file);
+    
     *numLines = lines;
+    fread(data, sizeof(char), lines * maxLineLength, file);
+    fclose(file);
 }
 
-void fileToArrayLineByLine(int numLines, FILE *file, char** lines) {
+void fileToArrayLineByLine(int numLines, char *data, char **lines) {
     char *save;
-    lines[0] = strtok_r(file, "\n", &save);  
+    lines[0] = strtok_r(data, "\n", &save);  
     for (int i = 1; i < numLines; i++) {
         lines[i] = strtok_r(NULL, "\n", &save);
     }

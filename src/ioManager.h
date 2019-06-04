@@ -6,7 +6,7 @@
 void loadFile(char **argv, int maxLineLength, int *numLines, char* data);
 
 // Loads data into a String array containing each line of assembly code
-void fileToArrayLineByLine(int numLines, FILE *file, char** lines);
+void fileToArrayLineByLine(int numLines, char *data, char **lines);
 
 // Function that converts an array of instructions to an array of bytes
 // in the style that appears to how it does in memory

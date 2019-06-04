@@ -5,6 +5,8 @@
 
 #include "symbolTable.h"
 #include "ioManager.h"
+#include "ioManager.c" // remove
+#include "symbolTable.c" // remove
 
 #define MAX_LINE_LENGTH 511
 
@@ -64,12 +66,11 @@ int main(int argc, char **argv) {
     loadFile(argv, MAX_LINE_LENGTH, &numLines, data);
 
     char **instructionsStrArray = init2dCharArray(numLines, MAX_LINE_LENGTH);
-    fileToArrayLineByLine(numLines, MAX_LINE_LENGTH, data, instructionsStrArray);
+    fileToArrayLineByLine(numLines, data, instructionsStrArray);
 
     // Generate symbol table (Pass 1)
     SymbolTable *symbolTable = createTable();
     char *label = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
-    char label[MAX_LINE_LENGTH];
     int address = 0;
     // memset(label, 0, sizeof(label));
     for (int i = 0; i < numLines; i++) {
@@ -93,7 +94,7 @@ int main(int argc, char **argv) {
         //         label[j] = instructionsStr[i][j];
         //     }
         // }
-        if (strstr(instructionsStrArray, ":") != NULL) { // If ':' is in the line
+        if (strstr(instructionsStrArray[i], ":") != NULL) { // If ':' is in the line
             label = strdup(instructionsStrArray[i]);
             label[strlen(label) - 1] = '\0';
             addEntry(symbolTable, label, address * 4);
@@ -110,7 +111,7 @@ int main(int argc, char **argv) {
     uint32_t * instructions;
 
     for (int i = 0; i < numLines; i++) {
-        if (strstr(instructionsStrArray, ":") == NULL) {
+        if (strstr(instructionsStrArray[i], ":") == NULL) {
             instructions[i] = processInstruction(instructionsStrArray[i], symbolTable);
         }
     }
