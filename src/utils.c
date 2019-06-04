@@ -1,71 +1,111 @@
 #include "utils.h"
 
-// Get nth bit from 32 bit data
-uint8_t getBit(uint32_t src, uint8_t amt) {
-    return (src >> amt) & 0x1;
-}
-
-// Rotate 32 bit data right
-uint32_t rotateRight32(uint32_t src, uint32_t amt) {
-    return (src >> amt) | (src << (32 - amt));
+// Checks if the sum of 2 integers gives an overflow (the sum is given as an argument as well)
+uint8_t checkOverflow(uint32_t const *a, uint32_t const *b, uint32_t const *result) {
+    return ((*a > 0 && *b > 0 && ((int32_t) *result) < 0) || (((int32_t) *a) < 0 && ((int32_t) *b) < 0 && *result > 0));
 }
 
 // Check if Cond satisfies CPSR register [Pg. 4 spec]
-uint8_t isConditionSatisfied(uint32_t cpsr, uint8_t condition) {
-    switch (condition) {
-        case 0x0: // eq (Z == 1)
-            return getBit(cpsr, 30) == 1;
-        case 0x1: // ne (Z == 0)
-            return getBit(cpsr, 30) == 0;
-        case 0xa: // ge (N == V)
-            return getBit(cpsr, 31) == getBit(cpsr, 28);
-        case 0xb: // lt (N != V)
-            return getBit(cpsr, 31) != getBit(cpsr, 28);
-        case 0xc: // gt (Z == 0) && (N == V)
-            return (getBit(cpsr, 30) == 0) && (getBit(cpsr, 31) == getBit(cpsr, 28));
-        case 0xd: // le (Z == 1) || (N != V)
-            return (getBit(cpsr, 30) == 1) && (getBit(cpsr, 31) != getBit(cpsr, 28));
-        case 0xe: // al
+uint8_t isConditionSatisfied(uint32_t const *cpsr, uint8_t const *condition) {
+    uint8_t importantBits = *cpsr >> 28;
+    switch (*condition) {
+        case EQ: // (Z == 1)
+            return importantBits & 0x4;
+        case NE: // (Z == 0)
+            return !(importantBits & 0x4);
+        case GE: // (N == V)
+            return ((importantBits >> 3) | 0x1) == (importantBits | 0x1);
+        case LT: // (N != V)
+            return ((importantBits >> 3) | 0x1) != (importantBits | 0x1);
+        case GT: // (Z == 0) && (N == V)
+            return (!(importantBits & 0x4)) && ((importantBits >> 3) | 0x1) == (importantBits | 0x1);
+        case LE: // (Z == 1) || (N != V)
+            return (importantBits & 0x4) && ((importantBits >> 3) | 0x1) != (importantBits | 0x1);
+        case AL:
             return 1;
         default:
             return 0;
     }
 }
 
-void barrelShift(uint32_t const *registers, uint16_t input,
-                 uint32_t *output, uint8_t *shiftCarry) {
-    uint8_t shift = input >> 4;
-    uint8_t Rm = input & 0xf;
-    uint8_t shiftType = (shift >> 1) & 0x3;
-    uint8_t shiftAmount;
-
-    *output = registers[Rm];
-    if ((shift & 0x1) == 0) { // shift by constant amount
-        shiftAmount = shift >> 3;
-    } else { // shift by a register
-        shiftAmount = registers[shift >> 4] & 0xff;
+void shiftWithCarry(uint8_t const *shiftBy, uint8_t const *shiftType, uint32_t *shiftedValue, uint8_t *shiftCarry) {
+    switch (*shiftType) {
+        case LSL:
+            *shiftCarry = (*shiftedValue >> (32 - *shiftBy)) & 0x1;
+            *shiftedValue = *shiftedValue << *shiftBy;
+            break;
+        case LSR:
+            *shiftCarry = (*shiftedValue >> (*shiftBy - 1)) & 0x1;
+            *shiftedValue = *shiftedValue >> *shiftBy;
+            break;
+        case ASR:
+            *shiftCarry = (*shiftedValue >> (*shiftBy - 1)) & 0x1;
+            *shiftedValue = (uint32_t) (((int32_t) *shiftedValue) >> *shiftBy);
+            break;
+        case ROR:
+            *shiftCarry = (*shiftedValue >> (*shiftBy - 1)) & 0x1;
+            *shiftedValue = (*shiftedValue >> *shiftBy) | (*shiftedValue << (32 - *shiftBy));
+            break;
+        default:
+            break;
     }
-    if (shiftAmount > 0) {
-        switch (shiftType) {
-            case 0x0: // lsl
-                *shiftCarry = getBit(registers[Rm], 32 - shiftAmount);
-                *output = registers[Rm] << shiftAmount;
-                break;
-            case 0x1: // lsr
-                *shiftCarry = getBit(registers[Rm], shiftAmount - 1);
-                *output = registers[Rm] >> shiftAmount;
-                break;
-            case 0x2: // asr
-                *shiftCarry = getBit(registers[Rm], shiftAmount - 1);
-                *output = (uint32_t) (((int32_t) registers[Rm]) >> shiftAmount);
-                break;
-            case 0x3: // ror
-                *shiftCarry = getBit(registers[Rm], shiftAmount - 1);
-                *output = rotateRight32(registers[Rm], shiftAmount);
-                break;
-            default:
-                break;
+}
+
+void shift(uint8_t const *shiftBy, uint8_t const *shiftType, uint32_t *shiftedValue) {
+    switch (*shiftType) {
+        case LSL:
+            *shiftedValue = *shiftedValue << *shiftBy;
+            break;
+        case LSR:
+            *shiftedValue = *shiftedValue >> *shiftBy;
+            break;
+        case ASR:
+            *shiftedValue = (uint32_t) (((int32_t) *shiftedValue) >> *shiftBy);
+            break;
+        case ROR:
+            *shiftedValue = (*shiftedValue >> *shiftBy) | (*shiftedValue << (32 - *shiftBy));
+            break;
+        default:
+            break;
+    }
+}
+
+void processingUpdateCPSR(uint32_t *cpsr, uint32_t const *result, uint8_t const *carry) {
+    if (*result) {
+        if (*carry) {
+            uint8_t bit31 = (*result >> 31) & 0x1;
+            if (bit31) {
+                *cpsr = (*cpsr & 0xbfffffff) | 0xa0000000; // clears Z and sets N and C of CPSR
+            } else {
+                *cpsr = (*cpsr & 0x3fffffff) | 0x20000000; // clears N and Z and sets C of CPSR
+            }
+        } else {
+            uint8_t bit31 = (*result >> 31) & 0x1;
+            if (bit31) {
+                *cpsr = (*cpsr & 0x9fffffff) | 0x80000000; // clears Z and C and sets N of CPSR
+            } else {
+                *cpsr &= 0x9fffffff; // clears N, Z and C of CPSR
+            }
         }
+    } else {
+        if (*carry) {
+            *cpsr = (*cpsr & 0x7fffffff) | 0x60000000; // clears N and sets Z and C of CPSR
+        } else {
+            *cpsr = (*cpsr & 0x5fffffff) | 0x40000000; // clears N and C and sets Z of CPSR
+        }
+    }
+}
+
+void multiplyingUpdateCPSR(uint32_t *cpsr, uint32_t const *result) {
+    if (result) {
+        uint8_t bit31 = (*result >> 31) & 0x1;
+        if (bit31) {
+            *cpsr = (*cpsr & 0x8fffffff) | 0x80000000; // clears Z and sets N of CPSR
+        } else {
+            *cpsr &= 0x3fffffff; // clears N and Z of CPSR
+        }
+    } else {
+        *cpsr = (*cpsr & 0x7fffffff) | 0x40000000; // clears N and sets Z of CPSR
     }
 }
 

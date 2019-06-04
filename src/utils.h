@@ -4,14 +4,17 @@
 #include <stdlib.h>
 #include "definitions.h"
 
-uint8_t getBit(uint32_t src, uint8_t amt);
+uint8_t checkOverflow(uint32_t const *a, uint32_t const *b, uint32_t const *result);
 
-uint32_t rotateRight32(uint32_t src, uint32_t amt);
+uint8_t isConditionSatisfied(uint32_t const *cpsr, uint8_t const *condition);
 
-uint8_t isConditionSatisfied(uint32_t cpsr, uint8_t condition);
+void shiftWithCarry(uint8_t const *shiftBy, uint8_t const *shiftType, uint32_t *shiftedValue, uint8_t *shiftCarry);
+					
+void shift(uint8_t const *shiftBy, uint8_t const *shiftType, uint32_t *shiftedValue);
 
-void barrelShift(uint32_t const *registers, uint16_t input,
-                 uint32_t *output, uint8_t *shiftCarry);
+void processingUpdateCPSR(uint32_t *cpsr, uint32_t const *result, uint8_t const *carry);
+
+void multiplyingUpdateCPSR(uint32_t *cpsr, uint32_t const *result);
 
 void output(uint32_t const * registers, uint8_t const * memory);
 

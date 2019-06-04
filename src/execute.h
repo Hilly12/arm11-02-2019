@@ -1,9 +1,11 @@
 #include "utils.h"
 
-void executeDataProcessing(uint32_t *registers, uint8_t const *instr);
+void executeProcessing(uint32_t *registers, DecodedInstruction *decodedInstr);
 
-void executeMultiply(uint32_t *registers, uint8_t const *instr);
+void executeMUL(uint32_t *registers, DecodedInstruction const *decodedInstr);
 
-void executeSingleDataTransfer(uint32_t *registers, uint8_t *memory, uint8_t const *instr);
+void executeMLA(uint32_t *registers, DecodedInstruction const *decodedInstr);
 
-void executeBranch(uint32_t *registers, uint8_t const *instr);
+void executeTransferring(uint32_t *registers, uint8_t *memory, DecodedInstruction *decodedInstr);
+
+void executeBranch(uint32_t *registerPC, DecodedInstruction const *decodedInstr);

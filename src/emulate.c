@@ -7,10 +7,10 @@ int main(int argc, char **argv) {
     uint8_t memory[MEMORY_SIZE];
 
     // State of ARM machine when turned on [Pg. 3 Spec]
-    for (int i = 0; i < REGISTERS; i++) {
+    for (uint8_t i = 0; i < REGISTERS; i++) {
         registers[i] = 0;
     }
-    for (int i = 0; i < MEMORY_SIZE; i++) {
+    for (uint32_t i = 0; i < MEMORY_SIZE; i++) {
         memory[i] = 0;
     }
 
@@ -20,42 +20,43 @@ int main(int argc, char **argv) {
     fclose(binary);
 
     uint8_t fetchedInstr[8]; // Cond | 4 | 4 | r1 | r2 | 4 | 4 | 4
-    decodedInstruction decodedInstr;
-    decodedInstr.type = INVALID; // initialise
+    DecodedInstruction decodedInstr;
 
-    uint8_t fetched = 0;
-    uint8_t decoded = 0;
-    uint8_t finished = 0;
-    uint8_t branched = 0;
+    // First iteration (only fetching)
+    fetch(&registers[PC_REF], memory, fetchedInstr);
+    registers[PC_REF] += 4;
 
-    while (registers[PC_REF] < MEMORY_SIZE) {
-        // EXECUTE INSTRUCTION
-        if (decoded) {
-            execute(registers, memory, decodedInstr, &branched, &finished);
-            decoded = 0;
-            if (branched) {
-                fetched = 0;
-            }
-        }
+    // Second iteration (decoding and fetching);
+    decode(fetchedInstr, registers, &decodedInstr);
+    fetch(&registers[PC_REF], memory, fetchedInstr);
+    registers[PC_REF] += 4;
 
-        // DECODE INSTRUCTION
-        if (fetched) {
-            decode(fetchedInstr, &decodedInstr);
-            fetched = 0;
-            decoded = 1;
-        }
+    // Third iteration onward (executing, decoding and fetching)
+    while (1) {
+        // Execute instruction
+        execute(registers, memory, &decodedInstr);
 
-        // FETCH INSTRUCTION
-        if (!finished) {
-            fetch(registers[PC_REF], memory, fetchedInstr);
-            fetched = 1;
-
-            // NEXT INSTRUCTION
-            registers[PC_REF] += 4;
-        }
-
-        if (finished && !decoded) {
+        // Break the loop if the last executed instruction was a HALT
+        if (decodedInstr.type == ANDEQ) {
             break;
+        }
+
+        // Decode instruction if last instruction was not a branch
+        if (decodedInstr.type == BRANCH) {
+            decodedInstr.type = INVALID;
+        } else {
+            decode(fetchedInstr, registers, &decodedInstr);
+        }
+
+        // Fetch instruction if there are more instructions to consider
+        if (registers[PC_REF] < MEMORY_SIZE) {
+            fetch(&registers[PC_REF], memory, fetchedInstr);
+            registers[PC_REF] += 4;
+        } else {
+            // Otherwise fetch an ANDEQ instruction
+            for (uint8_t i = 0; i < 8; i++) {
+                fetchedInstr[i] = 0;
+            }
         }
     }
 
