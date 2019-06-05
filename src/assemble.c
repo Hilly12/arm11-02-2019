@@ -42,13 +42,20 @@ uint32_t processInstruction(char *code, SymbolTable* symbolTable) {
 }
 
 // Uses array of pointers to point to 
-char **init2dCharArray(int rows, int cols) {
+char **init2dCharArray(unsigned int rows,unsigned int cols) {
     char **res = (char **) malloc(rows * sizeof(char *));
     res[0] = (char *) malloc(rows * cols * sizeof(char));
     for (int i = 1; i < rows; i++) {
         res[i] = res[i - 1] + cols;
     }
     return res;
+}
+
+void free2dArray(char **array, unsigned int rows) {
+    for (int i = 0; i < rows; i++) {
+        free(array[i]);
+    }
+    free(array);
 }
 
 int main(int argc, char **argv) {
