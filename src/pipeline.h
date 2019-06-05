@@ -1,3 +1,4 @@
+#include "decode.h"
 #include "execute.h"
 
 void fetch(uint32_t const *pcVal, uint8_t const *memory, uint8_t *instr);
