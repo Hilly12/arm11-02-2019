@@ -5,8 +5,6 @@
 
 #include "symbolTable.h"
 #include "ioManager.h"
-#include "ioManager.c" // remove
-#include "symbolTable.c" // remove
 
 #define MAX_LINE_LENGTH 511
 
@@ -105,7 +103,8 @@ int processInstruction(char *code, SymbolTable *symbolTable) {
     return parseDataProc(code, save, instr, symbolTable);
 }
 
-char **init2dCharArray(int rows, int cols) {
+// Uses array of pointers to point to 
+char **init2dCharArray(unsigned int rows,unsigned int cols) {
     char **res = (char **) malloc(rows * sizeof(char *));
     res[0] = (char *) malloc(rows * cols * sizeof(char));
     for (int i = 1; i < rows; i++) {
@@ -114,12 +113,29 @@ char **init2dCharArray(int rows, int cols) {
     return res;
 }
 
+//Free space allocated to a 2d array
+void free2dArray(char **array, unsigned int rows) {
+    for (int i = 0; i < rows; i++) {
+        free(array[i]);
+    }
+    free(array);
+}
+
+//Generate offset for branch instruction
+int generateOffset(SymbolTable * symbolTable, char * label, int currentAddress) {
+    return (getAddress(symbolTable, label) - currentAddress - 4) >> 2;
+}
+
 int main(int argc, char **argv) {
+    //Load file in
     int numLines = 0;
     char *data;
+    FILE *fileIn;
+    fileIn = fopen(argv[1], "r");
+    data = loadFile(fileIn, MAX_LINE_LENGTH, &numLines);
+    fclose(fileIn);
 
-    loadFile(argv, MAX_LINE_LENGTH, &numLines, data);
-
+    //Convert data into array that can be read from
     char **instructionsStrArray = init2dCharArray(numLines, MAX_LINE_LENGTH);
     fileToArrayLineByLine(numLines, data, instructionsStrArray);
 
@@ -131,7 +147,7 @@ int main(int argc, char **argv) {
     for (int i = 0; i < numLines; i++) {
         if (strstr(instructionsStrArray[i], ":") != NULL) { // If ':' is in the line
             label = strdup(instructionsStrArray[i]);
-            label[strlen(label) - 1] = '\0';
+            label[strlen(label) - 1] = '\0'; //Add an end of string character to the end of label
             addEntry(symbolTable, label, address * 4);
         } else {
             address++;
@@ -143,7 +159,7 @@ int main(int argc, char **argv) {
     //Pre: Array of instructions and a adt holding a symbol table
     //Post: An array of binary instructions
 
-    int * instructions;
+    int instructions[numLines];
 
     for (int i = 0; i < numLines; i++) {
         if (strstr(instructionsStrArray[i], ":") == NULL) {

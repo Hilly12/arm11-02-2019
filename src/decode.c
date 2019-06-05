@@ -34,16 +34,12 @@ void decodeProcessing(uint8_t const *instr, uint32_t const *registers, DecodedIn
 }
 
 void decodeMultiplying(uint8_t const *instr, DecodedInstruction *decodedInstr) {
-    uint8_t A = (instr[2] >> 1) & 0x1;
-    if (A) { // A == 1 (mla)
-        decodedInstr->type = MLA;
-        decodedInstr->Rn = instr[4];
-    } else { // A == 0 (mul)
-        decodedInstr->type = MUL;
-    }
+	decodedInstr->type = MULTIPLYING;
+	decodedInstr->A = (instr[2] >> 1) & 0x1;
     decodedInstr->Rd = instr[3];
     decodedInstr->Rm = instr[7];
     decodedInstr->Rs = instr[5];
+	decodedInstr->Rn = instr[4];
     decodedInstr->S = instr[2] & 0x1;
 }
 

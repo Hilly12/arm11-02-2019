@@ -17,10 +17,9 @@
 #define ANDEQ 0
 #define INVALID 1
 #define PROCESSING 2
-#define MUL 3
-#define MLA 4
-#define TRANSFER 5
-#define BRANCH 6
+#define MULTIPLYING 3
+#define TRANSFER 4
+#define BRANCH 5
 #define AND 0
 #define EOR 1
 #define SUB 2
@@ -56,6 +55,7 @@ typedef struct DecodedInstruction {
     };
     union {
         uint32_t operand2; // For processing
+		uint8_t A; // For multiplying
         uint32_t transferOffset; // For transferring
         int32_t branchOffset; // For branch
     };

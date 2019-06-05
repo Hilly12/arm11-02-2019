@@ -30,7 +30,7 @@ void addEntry(SymbolTable *symTable, char *label, uint32_t address) {
 
 }
 
-uint32_t getAddress(SymbolTable const *symTable, char *label) {
+int getAddress(SymbolTable const *symTable, char *label) {
     Entry *current = symTable->tail;
     while (current != NULL) {
         if (strcmp(current->label, label) == 0) {

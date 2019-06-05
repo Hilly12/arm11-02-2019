@@ -50,11 +50,8 @@ void execute(uint32_t *registers, uint8_t *memory, DecodedInstruction *decodedIn
         case PROCESSING:
             executeProcessing(registers, decodedInstr);
             return;
-        case MUL:
-            executeMUL(registers, decodedInstr);
-            return;
-        case MLA:
-            executeMLA(registers, decodedInstr);
+        case MULTIPLYING:
+            executeMultiplying(registers, decodedInstr);
             return;
         case TRANSFER:
             executeTransferring(registers, memory, decodedInstr);

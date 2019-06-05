@@ -18,6 +18,6 @@ SymbolTable *createTable(void);
 void addEntry(SymbolTable *symTable, char *label, uint32_t address);
 
 // Searches symbol table for label and returns corresponding address
-uint32_t getAddress(SymbolTable const *symTable, char *label);
+int getAddress(SymbolTable const *symTable, char *label);
 
 #endif

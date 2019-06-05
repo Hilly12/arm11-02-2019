@@ -1,10 +1,10 @@
 #include "ioManager.h"
+#include <stdlib.h>
+#include <string.h>
 
-void loadFile(char **argv, int maxLineLength, int *numLines, char* data) {
-    
-    FILE *file;
-    file = fopen(argv[1], "r");
-
+//Load file into the program and get number of lines
+char * loadFile(FILE *file, int maxLineLength, int *numLines) {
+    //Get number of lines
     int lines = 0;
     int ch = 0;
     while (!feof(file)) {
@@ -14,12 +14,18 @@ void loadFile(char **argv, int maxLineLength, int *numLines, char* data) {
         }
     }
     rewind(file);
-    
+
     *numLines = lines;
+
+    //Load data
+    char * data = (char *) malloc (maxLineLength * lines * sizeof(char));
     fread(data, sizeof(char), lines * maxLineLength, file);
     fclose(file);
+
+    return data;
 }
 
+//Load data into 2d array
 void fileToArrayLineByLine(int numLines, char *data, char **lines) {
     char *save;
     lines[0] = strtok_r(data, "\n", &save);  
@@ -28,9 +34,10 @@ void fileToArrayLineByLine(int numLines, char *data, char **lines) {
     }
 }
 
-uint8_t *instructionsToMemory(uint8_t *memory, uint32_t *instructions) {
+//Turns 32 bit instructions to bytes
+int * instructionsToMemory(int *memory, int *instructions) {
     size_t n = sizeof(instructions) / sizeof(uint32_t);
-    uint32_t instrBuffer;
+    int instrBuffer;
     for (int i = 0; i < n; ++i) {
         instrBuffer = instructions[i];
 
@@ -42,11 +49,12 @@ uint8_t *instructionsToMemory(uint8_t *memory, uint32_t *instructions) {
     return memory;
 }
 
+//Saves instructions to file
 void saveToFile(char *filename, int *instructions) {
     FILE *fileOut;
     fileOut = fopen(filename, "w+");
-    uint8_t memory[sizeof(instructions)];
-    uint8_t *output = instructionsToMemory(memory, instructions);
+    int memory[sizeof(instructions)];
+    int *output = instructionsToMemory(memory, instructions);
     fwrite(output, sizeof(memory), 1, fileOut);
     fclose(fileOut);
 }
