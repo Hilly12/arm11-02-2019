@@ -104,17 +104,14 @@ void executeProcessing(uint32_t *registers, DecodedInstruction *decodedInstr) {
     }
 }
 
-void executeMUL(uint32_t *registers, DecodedInstruction const *decodedInstr) {
-    registers[decodedInstr->Rd] = registers[decodedInstr->Rm] * registers[decodedInstr->Rs];
-    if (decodedInstr->S) {
-        multiplyingUpdateCPSR(&registers[CPSR_REF], &registers[decodedInstr->Rd]);
-    }
-}
-
-void executeMLA(uint32_t *registers, DecodedInstruction const *decodedInstr) {
-    registers[decodedInstr->Rd] =
+void executeMultiplying(uint32_t *registers, DecodedInstruction const *decodedInstr) {
+	if (decodedInstr->A) {
+		registers[decodedInstr->Rd] =
             registers[decodedInstr->Rm] * registers[decodedInstr->Rs] +
             registers[decodedInstr->Rn];
+	} else {
+		registers[decodedInstr->Rd] = registers[decodedInstr->Rm] * registers[decodedInstr->Rs];
+	}
     if (decodedInstr->S) {
         multiplyingUpdateCPSR(&registers[CPSR_REF], &registers[decodedInstr->Rd]);
     }
