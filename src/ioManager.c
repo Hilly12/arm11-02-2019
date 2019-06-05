@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+//Load file into the program and get number of lines
 char * loadFile(FILE *file, int maxLineLength, int *numLines) {
-
+    //Get number of lines
     int lines = 0;
     int ch = 0;
     while (!feof(file)) {
@@ -16,6 +17,7 @@ char * loadFile(FILE *file, int maxLineLength, int *numLines) {
 
     *numLines = lines;
 
+    //Load data
     char * data = (char *) malloc (maxLineLength * lines * sizeof(char));
     fread(data, sizeof(char), lines * maxLineLength, file);
     fclose(file);
@@ -23,6 +25,7 @@ char * loadFile(FILE *file, int maxLineLength, int *numLines) {
     return data;
 }
 
+//Load data into 2d array
 void fileToArrayLineByLine(int numLines, char *data, char **lines) {
     char *save;
     lines[0] = strtok_r(data, "\n", &save);  
@@ -31,6 +34,7 @@ void fileToArrayLineByLine(int numLines, char *data, char **lines) {
     }
 }
 
+//Turns 32 bit instructions to bytes
 int * instructionsToMemory(int *memory, int *instructions) {
     size_t n = sizeof(instructions) / sizeof(uint32_t);
     int instrBuffer;
@@ -45,6 +49,7 @@ int * instructionsToMemory(int *memory, int *instructions) {
     return memory;
 }
 
+//Saves instructions to file
 void saveToFile(char *filename, int *instructions) {
     FILE *fileOut;
     fileOut = fopen(filename, "w+");

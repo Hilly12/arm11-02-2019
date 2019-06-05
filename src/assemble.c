@@ -51,6 +51,7 @@ char **init2dCharArray(unsigned int rows,unsigned int cols) {
     return res;
 }
 
+//Free space allocated to a 2d array
 void free2dArray(char **array, unsigned int rows) {
     for (int i = 0; i < rows; i++) {
         free(array[i]);
@@ -58,15 +59,21 @@ void free2dArray(char **array, unsigned int rows) {
     free(array);
 }
 
+//Generate offset for branch instruction
+int generateOffset(SymbolTable * symbolTable, char * label, int currentAddress) {
+    return (getAddress(symbolTable, label) - currentAddress - 4) >> 2;
+}
+
 int main(int argc, char **argv) {
+    //Load file in
     int numLines = 0;
     char *data;
     FILE *fileIn;
     fileIn = fopen(argv[1], "r");
-
     data = loadFile(fileIn, MAX_LINE_LENGTH, &numLines);
     fclose(fileIn);
 
+    //Convert data into array that can be read from
     char **instructionsStrArray = init2dCharArray(numLines, MAX_LINE_LENGTH);
     fileToArrayLineByLine(numLines, data, instructionsStrArray);
 
@@ -78,7 +85,7 @@ int main(int argc, char **argv) {
 
         if (strstr(instructionsStrArray[i], ":") != NULL) { // If ':' is in the line
             label = strdup(instructionsStrArray[i]);
-            label[strlen(label) - 1] = '\0';
+            label[strlen(label) - 1] = '\0'; //Add an end of string character to the end of label
             addEntry(symbolTable, label, address * 4);
         } else {
             address++;
