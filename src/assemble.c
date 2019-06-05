@@ -12,6 +12,7 @@
 
 typedef struct instruction {
     char *mnemonic;
+    uint8_t Cond;
     uint8_t Rn;
     uint8_t Rd;
     uint8_t Rs;
@@ -24,14 +25,75 @@ typedef struct instruction {
     uint8_t U;
     uint8_t L;
     uint16_t Op2;
-} instruction;
+    uint32_t lastAddress;
+} Instruction;
 
-uint32_t processInstruction(char *code, SymbolTable* symbolTable) {
-    uint32_t binaryInstruction = 0;
+uint8_t parseRegister(char *token) {
+    uint8_t r = token[1] - '0';
+    if (token[2] == '\0') {
+        return r;
+    }
+    return r * 10 + (token[2] - '0');
+}
+
+uint16_t parseOperand(char *token) {
+    if (token[0] == 'r') {
+        return atoi(strtok_r(token, "-r", NULL));
+    } else if (strstr(token, "x") != NULL) {
+        return strtol(token, NULL, 16);
+    } else {
+        return strtol(token, NULL, 10);
+    }
+}
+
+int parseDataProc(char* code, char* save, Instruction *instr, SymbolTable *st) {
+    char *token;
+
+    instr->Cond = 0xe;
+    
+    // TODO: add mnemonic to symbol table
+    instr->Opcode = getAddress(st, instr->mnemonic);
+    
+    if (instr->Opcode < 0x8 || 0x10 < instr->Opcode) {
+        token = strtok_r(code, ", ", &save);
+        instr->Rd = parseRegister(token);
+        instr->S = 0;
+    } else { // tst, teq, cmp
+        instr->Rd = 0;
+        instr->S = 1;
+    }
+
+    if (instr->Opcode != 0xd) {
+        token = strtok_r(code, ", ", &save);
+        instr->Rn = parseRegister(token);
+    } else { // mov
+        instr->Rn = 0;
+    }
+
+    token = strtok_r(code, ", ", &save);
+    instr->I = (token[0] == '#');
+    instr->Op2 = parseOperand(token);
+
+    return (instr->Cond << 28) | (instr->I << 25) 
+            | (instr->Opcode << 21) | (instr->S << 20)
+            | (instr->Rn << 16) | (instr->Rd << 12)
+            | instr->Op2;
+}
+
+int processInstruction(char *code, SymbolTable *symbolTable) {
+    Instruction *instr = malloc(sizeof(Instruction));
+    char *save;
+
+    instr->mnemonic = strtok_r(code, " ", &save);
+
+    if (strcmp(instr->mnemonic, "andeq") == 0) {
+        return 0;
+    }
+
+    // void (*parse[]) (char*, char*, Instruction*, SymbolTable*) = { parseDataProc };
 
 
     //TODO: Get mnemonic from the start of the instruction
-
 
     //TODO: Work out which instruction it is and format (Big switch case?)
 
@@ -40,10 +102,9 @@ uint32_t processInstruction(char *code, SymbolTable* symbolTable) {
     //For the branch instructions have to use the symbol table to get address, lookup function needed;
     //Optional: Function needed to work out operand 2 for shifted register case
 
-    return binaryInstruction;
+    return parseDataProc(code, save, instr, symbolTable);
 }
 
-// Uses array of pointers to point to 
 char **init2dCharArray(int rows, int cols) {
     char **res = (char **) malloc(rows * sizeof(char *));
     res[0] = (char *) malloc(rows * cols * sizeof(char));
@@ -54,12 +115,6 @@ char **init2dCharArray(int rows, int cols) {
 }
 
 int main(int argc, char **argv) {
-    // Load file into array
-    // FILE *fileIn;
-    // fileIn = fopen(argv[1], "r");
-    // fclose(fileIn);
-    // const int numLines = getNumberOfLines(fileIn);
-
     int numLines = 0;
     char *data;
 
@@ -70,30 +125,10 @@ int main(int argc, char **argv) {
 
     // Generate symbol table (Pass 1)
     SymbolTable *symbolTable = createTable();
+    // Not actually sure we need to allocate memory (strdup might do it for us)
     char *label = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
     int address = 0;
-    // memset(label, 0, sizeof(label));
     for (int i = 0; i < numLines; i++) {
-        // // For each instruction remove and new line characters
-        // for (int j = 0; j < MAX_LINE_LENGTH; j++) {
-        //     if (instructionsStr[i][j] == '\n') {
-        //         instructionsStr[i][j] = '\0';
-        //     }
-        // }
-        // Reset the label buffer
-        // memset(label, 0, sizeof label);
-        // // Saves the address of a line if its in the format of a label
-        // for (int j = 0; j < MAX_LINE_LENGTH; j++) {
-        //     if (instructionsStr[i][j] == ':') {
-        //         label[j] = '\0';
-        //         addEntry(s, label, i * 4);
-        //         break;
-        //     } else if (instructionsStr[i][j] == ' ') {
-        //         break;
-        //     } else {
-        //         label[j] = instructionsStr[i][j];
-        //     }
-        // }
         if (strstr(instructionsStrArray[i], ":") != NULL) { // If ':' is in the line
             label = strdup(instructionsStrArray[i]);
             label[strlen(label) - 1] = '\0';
@@ -108,7 +143,7 @@ int main(int argc, char **argv) {
     //Pre: Array of instructions and a adt holding a symbol table
     //Post: An array of binary instructions
 
-    uint32_t * instructions;
+    int * instructions;
 
     for (int i = 0; i < numLines; i++) {
         if (strstr(instructionsStrArray[i], ":") == NULL) {
