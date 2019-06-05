@@ -5,8 +5,6 @@
 
 #include "symbolTable.h"
 #include "ioManager.h"
-#include "ioManager.c" // remove
-#include "symbolTable.c" // remove
 
 #define MAX_LINE_LENGTH 511
 
@@ -54,16 +52,13 @@ char **init2dCharArray(int rows, int cols) {
 }
 
 int main(int argc, char **argv) {
-    // Load file into array
-    // FILE *fileIn;
-    // fileIn = fopen(argv[1], "r");
-    // fclose(fileIn);
-    // const int numLines = getNumberOfLines(fileIn);
-
     int numLines = 0;
     char *data;
+    FILE *fileIn;
+    fileIn = fopen(argv[1], "r");
 
-    loadFile(argv, MAX_LINE_LENGTH, &numLines, data);
+    data = loadFile(fileIn, MAX_LINE_LENGTH, &numLines);
+    fclose(fileIn);
 
     char **instructionsStrArray = init2dCharArray(numLines, MAX_LINE_LENGTH);
     fileToArrayLineByLine(numLines, data, instructionsStrArray);
@@ -72,28 +67,8 @@ int main(int argc, char **argv) {
     SymbolTable *symbolTable = createTable();
     char *label = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
     int address = 0;
-    // memset(label, 0, sizeof(label));
     for (int i = 0; i < numLines; i++) {
-        // // For each instruction remove and new line characters
-        // for (int j = 0; j < MAX_LINE_LENGTH; j++) {
-        //     if (instructionsStr[i][j] == '\n') {
-        //         instructionsStr[i][j] = '\0';
-        //     }
-        // }
-        // Reset the label buffer
-        // memset(label, 0, sizeof label);
-        // // Saves the address of a line if its in the format of a label
-        // for (int j = 0; j < MAX_LINE_LENGTH; j++) {
-        //     if (instructionsStr[i][j] == ':') {
-        //         label[j] = '\0';
-        //         addEntry(s, label, i * 4);
-        //         break;
-        //     } else if (instructionsStr[i][j] == ' ') {
-        //         break;
-        //     } else {
-        //         label[j] = instructionsStr[i][j];
-        //     }
-        // }
+
         if (strstr(instructionsStrArray[i], ":") != NULL) { // If ':' is in the line
             label = strdup(instructionsStrArray[i]);
             label[strlen(label) - 1] = '\0';
@@ -108,7 +83,7 @@ int main(int argc, char **argv) {
     //Pre: Array of instructions and a adt holding a symbol table
     //Post: An array of binary instructions
 
-    uint32_t * instructions;
+    int instructions[numLines];
 
     for (int i = 0; i < numLines; i++) {
         if (strstr(instructionsStrArray[i], ":") == NULL) {
