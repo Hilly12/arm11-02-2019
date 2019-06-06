@@ -189,7 +189,7 @@ int processInstruction(char *code, ParserData *dat) {
     char *save;
     dat->mnemonic = strtok_r(code, " ", &save);
 
-    void (*parsers[]) (char*, char*, ParserData*) = { 
+    int (*parsers[]) (char*, char*, ParserData*) = { 
         parseDataProcessing,
         parseMultiply,
         parseDataTransfer,
@@ -197,7 +197,7 @@ int processInstruction(char *code, ParserData *dat) {
         parseSpecial
     };
 
-    return parseDataProc(code, save, dat);
+    return parseDataProcessing(code, save, dat);
 }
 
 // Uses array of pointers to point to 
