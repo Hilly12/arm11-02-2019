@@ -2,10 +2,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAX_LINE_LENGTH 511
 
-//Load file into the program and get number of lines
-char * loadFile(FILE *file, int maxLineLength, int *numLines) {
-    //Get number of lines
+char **init2dCharArray(unsigned int rows, unsigned int cols) {
+    char **res = (char **) malloc(rows * sizeof(char *));
+    res[0] = (char *) malloc(rows * cols * sizeof(char));
+    for (int i = 1; i < rows; i++) {
+        res[i] = res[i - 1] + cols;
+    }
+    return res;
+}
+
+char **loadFile(char **argv, int maxLineLength, int *numLines) {
+    FILE *file;
+    file = fopen(argv[1], "r");
+
+    // Get number of lines
     int lines = 0;
     int ch = 0;
     while (!feof(file)) {
@@ -18,24 +30,26 @@ char * loadFile(FILE *file, int maxLineLength, int *numLines) {
 
     *numLines = lines;
 
-    //Load data
-    char * data = (char *) malloc (maxLineLength * lines * sizeof(char));
-    fread(data, sizeof(char), lines * maxLineLength, file);
+    char **array = init2dCharArray(lines, MAX_LINE_LENGTH);
+
+    int i = 0;
+    int j = 0;
+    while(!feof(file)) {
+        ch = fgetc(file);
+        if (ch == '\n' || ch == EOF) {
+            array[i][j] = '\0';
+            i++;
+            j = 0;
+        } else {
+            array[i][j] = ch;
+            j++;
+        }
+    }
     fclose(file);
 
-    return data;
+    return array;
 }
 
-//Load data into 2d array
-void fileToArrayLineByLine(int numLines, char *data, char **lines) {
-    char *save;
-    lines[0] = strtok_r(data, "\n", &save);  
-    for (int i = 1; i < numLines; i++) {
-        lines[i] = strtok_r(NULL, "\n", &save);
-    }
-}
-
-//Turns 32 bit instructions to bytes
 BYTE * instructionsToMemory(BYTE *memory, int *instructions) {
     size_t n = sizeof(instructions) / sizeof(int);
     int instrBuffer;
@@ -50,7 +64,6 @@ BYTE * instructionsToMemory(BYTE *memory, int *instructions) {
     return memory;
 }
 
-//Saves instructions to file
 void saveToFile(char *filename, int *instructions) {
     FILE *fileOut;
     fileOut = fopen(filename, "wb");

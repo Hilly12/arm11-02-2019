@@ -38,7 +38,6 @@ int getAddress(SymbolTable const *symTable, char *label) {
         }
         current = current->prev;
     }
-    perror("Label does not exist");
     return EXIT_FAILURE;
 }
 

@@ -45,28 +45,28 @@ int parseDataProcessing(char* code, char* save, ParserData *dat) {
     Opcode = getAddress(dat->opcodeTable, dat->mnemonic) & 0xf;
 
     char *token;
-    
-    if (0x8 <= Opcode && Opcode <= 0x10) { // tst, teq, cmp
+
+    if (Opcode == 0xd) { // mov
         Rn = 0;
+    } else {
+        token = strtok_r(NULL, ", ", &save);
+        Rn = parseRegister(token);
+    }
+    
+    if (0x8 <= Opcode && Opcode <= 0xa) { // tst, teq, cmp
+        Rd = 0;
         S = 1;
     } else {
-        token = strtok_r(code, ", ", &save);
-        Rn = parseRegister(token);
+        token = strtok_r(NULL, ", ", &save);
+        Rd = parseRegister(token);
         S = 0;
     }
 
-    if (Opcode == 0xd) { // mov
-        Rd = 0;
-    } else {
-        token = strtok_r(code, ", ", &save);
-        Rd = parseRegister(token);
-    }
-
-    token = strtok_r(code, ", ", &save);
+    token = strtok_r(NULL, ", ", &save);
     I = (token[0] == '#');
     Operand = parseOperand(token);
 
-    token = strtok_r(code, ", ", &save);
+    token = strtok_r(NULL, ", ", &save);
     if (I == 0 && token != NULL) { // Shift
         char *shiftToken, *shiftSave;
         uint8_t shiftType;
@@ -75,7 +75,7 @@ int parseDataProcessing(char* code, char* save, ParserData *dat) {
         shiftToken = strtok_r(token, " ", &shiftSave);
         shiftType = getAddress(dat->opcodeTable, shiftToken) & 0xf;
 
-        shiftToken = strtok_r(token, " ", &shiftSave);
+        shiftToken = strtok_r(NULL, " ", &shiftSave);
         shiftOperand = parseOperand(shiftToken);
 
         if (shiftToken[0] == '#') {
@@ -98,18 +98,18 @@ int parseMultiply(char* code, char* save, ParserData *dat) {
 
     char *token;
     
-    token = strtok_r(code, ", ", &save);
+    token = strtok_r(NULL, ", ", &save);
     Rd = parseRegister(token);
 
-    token = strtok_r(code, ", ", &save);
+    token = strtok_r(NULL, ", ", &save);
     Rm = parseRegister(token);
 
-    token = strtok_r(code, ", ", &save);
+    token = strtok_r(NULL, ", ", &save);
     Rs = parseRegister(token);
     
     // mla
     if (strcmp(dat->mnemonic, "mla") == 0) {
-        token = strtok_r(code, ", ", &save);
+        token = strtok_r(NULL, ", ", &save);
         Rn = parseRegister(token);
         A = 1;
     } else {
@@ -129,11 +129,11 @@ int parseDataTransfer(char* code, char* save, ParserData *dat) {
 
     char *token;
     
-    token = strtok_r(code, ", ", &save);
-    Rn = parseRegister(token);
-
-    token = strtok_r(code, ", ", &save);
+    token = strtok_r(NULL, ", ", &save);
     Rd = parseRegister(token);
+
+    token = strtok_r(NULL, ", ", &save);
+    Rn = parseRegister(token);
     I = 0;
     P = 0;
     U = 0;
@@ -157,7 +157,7 @@ int parseBranch(char* code, char* save, ParserData *dat) {
     
     Cond = getAddress(dat->opcodeTable, dat->mnemonic) & 0xf;
 
-    token = strtok_r(code, " ", &save);
+    token = strtok_r(NULL, " ", &save);
     Offset = generateOffset(dat->labelTable, token, dat->currentAddress); // TODO: pass address
 
     return (Cond << 28) | (0xa << 24) | Offset;
@@ -206,16 +206,6 @@ int processInstruction(char *code, ParserData *dat) {
     return parsers[getAddress(dat->parseTypeTable, dat->mnemonic)](code, save, dat);
 }
 
-// Uses array of pointers to point to 
-char **init2dCharArray(unsigned int rows,unsigned int cols) {
-    char **res = (char **) malloc(rows * sizeof(char *));
-    res[0] = (char *) malloc(rows * cols * sizeof(char));
-    for (int i = 1; i < rows; i++) {
-        res[i] = res[i - 1] + cols;
-    }
-    return res;
-}
-
 //Free space allocated to a 2d array
 void free2dArray(char **array, unsigned int rows) {
     for (int i = 0; i < rows; i++) {
@@ -225,35 +215,32 @@ void free2dArray(char **array, unsigned int rows) {
 }
 
 int main(int argc, char **argv) {
-    //Load file in
     int numLines = 0;
-    char *data;
-    FILE *fileIn;
-    fileIn = fopen(argv[1], "r");
-    data = loadFile(fileIn, MAX_LINE_LENGTH, &numLines);
-    fclose(fileIn);
 
 
-    //Convert data into array that can be read from
-    char **instructionsStrArray = init2dCharArray(numLines, MAX_LINE_LENGTH);
-    fileToArrayLineByLine(numLines, data, instructionsStrArray);
+    // Load File into String Array
+    char **instructionsStrArray = loadFile(argv, MAX_LINE_LENGTH, &numLines);
 
+    for (int i = 0; i < numLines; i++) {
+        printf(instructionsStrArray[i]);
+        printf("\n");
+    }
 
     // Generate symbol table (Pass 1)
     SymbolTable *symbolTable = createTable();
     char *label;
     int address = 0;
+
     for (int i = 0; i < numLines; i++) {
         if (strstr(instructionsStrArray[i], ":") != NULL) { // If ':' is in the line
             label = strdup(instructionsStrArray[i]);
-            label[strlen(label) - 1] = '\0'; //Add an end of string character to the end of label
+            label[strlen(label) - 1] = '\0'; // Add sentinal character to the end of label
             addEntry(symbolTable, label, address * 4);
         } else {
             address++;
         }
     }
-
-
+    
     // Generate binary encoding for each line (Pass 2)
     
     SymbolTable *opcodeTable = createOpcodeTable();
@@ -269,11 +256,12 @@ int main(int argc, char **argv) {
     for (int i = 0; i < numLines; i++) {
         if (strstr(instructionsStrArray[i], ":") == NULL) {
             dat->currentAddress = i * 4;
+            printf(instructionsStrArray[i]);
+            printf(": ");
             instructions[i] = processInstruction(instructionsStrArray[i], dat);
+            printf("%x\n", instructions[i]);
         }
     }
-
-
 
     // Save file
     saveToFile(argv[2], instructions);
