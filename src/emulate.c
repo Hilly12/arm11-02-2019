@@ -20,6 +20,7 @@ int main(int argc, char **argv) {
     fclose(binary);
 
     uint8_t fetchedInstr[8]; // Cond | 4 | 4 | r1 | r2 | 4 | 4 | 4
+
     DecodedInstruction decodedInstr;
 
     // First iteration (only fetching)
