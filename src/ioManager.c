@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 //Load file into the program and get number of lines
 char * loadFile(FILE *file, int maxLineLength, int *numLines) {
     //Get number of lines
@@ -35,8 +36,8 @@ void fileToArrayLineByLine(int numLines, char *data, char **lines) {
 }
 
 //Turns 32 bit instructions to bytes
-int * instructionsToMemory(int *memory, int *instructions) {
-    size_t n = sizeof(instructions) / sizeof(uint32_t);
+BYTE * instructionsToMemory(BYTE *memory, int *instructions) {
+    size_t n = sizeof(instructions) / sizeof(int);
     int instrBuffer;
     for (int i = 0; i < n; ++i) {
         instrBuffer = instructions[i];
@@ -52,9 +53,12 @@ int * instructionsToMemory(int *memory, int *instructions) {
 //Saves instructions to file
 void saveToFile(char *filename, int *instructions) {
     FILE *fileOut;
-    fileOut = fopen(filename, "w+");
-    int memory[sizeof(instructions)];
-    int *output = instructionsToMemory(memory, instructions);
+    fileOut = fopen(filename, "wb");
+    BYTE memory[sizeof(instructions)];
+    BYTE *output = instructionsToMemory(memory, instructions);
     fwrite(output, sizeof(memory), 1, fileOut);
     fclose(fileOut);
+
+
+
 }

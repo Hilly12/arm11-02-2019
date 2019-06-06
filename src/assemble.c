@@ -135,9 +135,11 @@ int main(int argc, char **argv) {
     data = loadFile(fileIn, MAX_LINE_LENGTH, &numLines);
     fclose(fileIn);
 
+
     //Convert data into array that can be read from
     char **instructionsStrArray = init2dCharArray(numLines, MAX_LINE_LENGTH);
     fileToArrayLineByLine(numLines, data, instructionsStrArray);
+
 
     // Generate symbol table (Pass 1)
     SymbolTable *symbolTable = createTable();
@@ -153,6 +155,7 @@ int main(int argc, char **argv) {
             address++;
         }
     }
+
 
 
     //TODO: Generate binary encoding for each line (Pass 2)
