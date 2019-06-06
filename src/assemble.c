@@ -35,47 +35,133 @@ uint8_t parseRegister(char *token) {
 }
 
 uint16_t parseOperand(char *token) {
-    if (token[0] == 'r') {
-        return atoi(strtok_r(token, "-r", NULL));
-    } else if (strstr(token, "x") != NULL) {
-        return strtol(token, NULL, 16);
-    } else {
-        return strtol(token, NULL, 10);
+    char *op = strtok_r(token, "r#=", NULL);
+    if (strstr(token, "x") != NULL) { // Hex
+        return strtol(op, NULL, 16);
+    } else { // Number or Register
+        return strtol(op, NULL, 10);
     }
 }
 
-int parseDataProc(char* code, char* save, Instruction *instr, SymbolTable *st) {
-    char *token;
-
+int parseDataProcessing(char* code, char* save, Instruction *instr, SymbolTable *st) {
     instr->Cond = 0xe;
     
-    // TODO: add mnemonic to symbol table
+    // TODO: add mnemonic to symbol table at start of program
     instr->Opcode = getAddress(st, instr->mnemonic);
-    
-    if (instr->Opcode < 0x8 || 0x10 < instr->Opcode) {
-        token = strtok_r(code, ", ", &save);
-        instr->Rd = parseRegister(token);
-        instr->S = 0;
-    } else { // tst, teq, cmp
-        instr->Rd = 0;
-        instr->S = 1;
-    }
 
-    if (instr->Opcode != 0xd) {
+    char *token;
+    
+    if (0x8 <= instr->Opcode && instr->Opcode <= 0x10) { // tst, teq, cmp
+        instr->Rn = 0;
+        instr->S = 1;
+    } else {
         token = strtok_r(code, ", ", &save);
         instr->Rn = parseRegister(token);
-    } else { // mov
-        instr->Rn = 0;
+        instr->S = 0;
+    }
+
+    if (instr->Opcode == 0xd) { // mov
+        instr->Rd = 0;
+    } else {
+        token = strtok_r(code, ", ", &save);
+        instr->Rd = parseRegister(token);
     }
 
     token = strtok_r(code, ", ", &save);
     instr->I = (token[0] == '#');
     instr->Op2 = parseOperand(token);
 
+
+    token = strtok_r(code, ", ", &save);
+    if (token != NULL) { // Shift
+        char *shiftToken, *shiftSave;
+        uint8_t shiftType;
+        uint16_t shiftAmount;
+
+        shiftToken = strtok_r(token, " ", &shiftSave);
+        shiftType = getAddress(st, shiftToken) & 0xff;
+
+        shiftToken = strtok_r(token, " ", &shiftSave);
+        shiftAmount = parseOperand(shiftToken);
+        
+        switch(shiftType) {
+            case 0: // lsl
+                instr->Op2 = instr->Op2 << shiftAmount;
+                break;
+            case 1:
+                break;
+            case 2:
+                break;
+            case 3:
+                break;
+        }
+    }
+
     return (instr->Cond << 28) | (instr->I << 25) 
             | (instr->Opcode << 21) | (instr->S << 20)
             | (instr->Rn << 16) | (instr->Rd << 12)
             | instr->Op2;
+}
+
+int parseMultiply(char* code, char* save, Instruction *instr, SymbolTable *st) {
+    instr->Cond = 0xe;
+
+    instr->S = 0;
+
+    char *token;
+    
+    token = strtok_r(code, ", ", &save);
+    instr->Rd = parseRegister(token);
+
+    token = strtok_r(code, ", ", &save);
+    instr->Rm = parseRegister(token);
+
+    token = strtok_r(code, ", ", &save);
+    instr->Rs = parseRegister(token);
+
+
+    token = strtok_r(code, ", ", &save);
+    if (token != NULL) { // mla
+        instr->Rn = parseRegister(token);
+        instr->A = 1;
+    }
+
+    return (instr->Cond << 28) | (instr->A << 21) 
+            | (instr->S << 20) | (instr->Rd << 16)
+            | (instr->Rn << 12) | (instr->Rs << 8)
+            | (0x9 << 4) | instr->Rm;
+}
+
+int parseDataTransfer(char* code, char* save, Instruction *instr, SymbolTable *st) {
+    instr->Cond = 0xe;
+
+    char *token;
+    
+    token = strtok_r(code, ", ", &save);
+    instr->Rn = parseRegister(token);
+
+    // This one is gonna be cancerous
+    token = strtok_r(code, ", ", &save);
+    instr->Rd = parseRegister(token); // haha if only :')
+
+    return (instr->Cond << 28) | (1 << 26) 
+            | (instr->I << 25) | (instr->P << 24)
+            | (instr->U << 23) | (instr->L << 20)
+            | (instr->Rn << 16) | (instr->Rd << 12)
+            | instr->Op2;
+}
+
+int parseBranch(char* code, char* save, Instruction *instr, SymbolTable *st) {
+    char *token;
+    uint32_t offset;
+    
+    token = strtok_r(code, " b", &save);
+    instr->Cond = getAddress(st, token);
+
+    token = strtok_r(code, " ", &save);
+    offset = generateOffset(st, token, 0x0); // TODO: pass address
+
+    return (instr->Cond << 28) | (0xa << 24) | offset;
 }
 
 int processInstruction(char *code, SymbolTable *symbolTable) {
@@ -121,8 +207,8 @@ void free2dArray(char **array, unsigned int rows) {
     free(array);
 }
 
-//Generate offset for branch instruction
-int generateOffset(SymbolTable * symbolTable, char * label, int currentAddress) {
+// Generate offset for branch instruction
+int generateOffset(SymbolTable * symbolTable, char *label, int currentAddress) {
     return (getAddress(symbolTable, label) - currentAddress - 4) >> 2;
 }
 
@@ -159,7 +245,7 @@ int main(int argc, char **argv) {
     //Pre: Array of instructions and a adt holding a symbol table
     //Post: An array of binary instructions
 
-    int instructions[numLines];
+    int *instructions = malloc(sizeof(int) * numLines);;
 
     for (int i = 0; i < numLines; i++) {
         if (strstr(instructionsStrArray[i], ":") == NULL) {
