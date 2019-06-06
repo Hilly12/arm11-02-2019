@@ -58,7 +58,4 @@ void saveToFile(char *filename, int *instructions) {
     BYTE *output = instructionsToMemory(memory, instructions);
     fwrite(output, sizeof(memory), 1, fileOut);
     fclose(fileOut);
-
-
-
 }
