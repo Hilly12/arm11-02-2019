@@ -42,45 +42,60 @@ int getAddress(SymbolTable const *symTable, char *label) {
     return EXIT_FAILURE;
 }
 
+SymbolTable *createOpcodeTable(void) {
+    SymbolTable *opTable = createTable();
+    addEntry(opTable, "and", 0x0);
+    addEntry(opTable, "eor", 0x1);
+    addEntry(opTable, "sub", 0x2);
+    addEntry(opTable, "rsb", 0x3);
+    addEntry(opTable, "add", 0x4);
+    addEntry(opTable, "tst", 0x8);
+    addEntry(opTable, "teq", 0x9);
+    addEntry(opTable, "cmp", 0xa);
+    addEntry(opTable, "orr", 0xc);
+    addEntry(opTable, "mov", 0xd);
 
-/*
-#include <stdio.h> // for debugging only
+    addEntry(opTable, "lsl", 0x0);
+    addEntry(opTable, "lsr", 0x1);
+    addEntry(opTable, "asr", 0x2);
+    addEntry(opTable, "ror", 0x3);
 
-// Debug
-void debug(void) {
-    printf("Starting symbol table debug\n");
-
-    symbolTable *st = createTable();
-    printf("Table created\n");
-
-    addEntry(st, "and", 0x0);
-    printf("Entry 1 added\n");
-
-    addEntry(st, "eor", 0x1);
-    printf("Entry 2 added\n");
-
-    addEntry(st, "sub", 0x2);
-    printf("Entry 3 added\n");
-
-    addEntry(st, "rsb", 0x3);
-    printf("Entry 4 added\n");
-
-    addEntry(st, "add", 0x4);
-    printf("Entry 5 added\n");
-
-    printf("Multiple entries added\n\n");
-
-    printf("Size: %d\n", st->size);
-    if (st->size == 5) {
-        printf("Correct Size\n");
-    }
-
-    printf("eor: %x\n", getAddress(st, "eor"));
-    printf("and: %x\n", getAddress(st, "and"));
-    printf("rsb: %x\n", getAddress(st, "rsb"));
-    printf("add: %x\n", getAddress(st, "add"));
-    printf("no'n: %x\n\n", getAddress(st, "potato"));
-
-    printf("Success");
+    addEntry(opTable, "beq", 0x0);
+    addEntry(opTable, "bne", 0x1);
+    addEntry(opTable, "bge", 0xa);
+    addEntry(opTable, "blt", 0xb);
+    addEntry(opTable, "bgt", 0xc);
+    addEntry(opTable, "ble", 0xd);
+    addEntry(opTable, "b", 0xe);
 }
-*/
+
+SymbolTable *createParseTypeTable(void) {
+    SymbolTable *opTable = createTable();
+    addEntry(opTable, "and", 0);
+    addEntry(opTable, "eor", 0);
+    addEntry(opTable, "sub", 0);
+    addEntry(opTable, "rsb", 0);
+    addEntry(opTable, "add", 0);
+    addEntry(opTable, "tst", 0);
+    addEntry(opTable, "teq", 0);
+    addEntry(opTable, "cmp", 0);
+    addEntry(opTable, "orr", 0);
+    addEntry(opTable, "mov", 0);
+
+    addEntry(opTable, "mul", 1);
+    addEntry(opTable, "mla", 1);
+
+    addEntry(opTable, "ldr", 2);
+    addEntry(opTable, "str", 2);
+
+    addEntry(opTable, "beq", 3);
+    addEntry(opTable, "bne", 3);
+    addEntry(opTable, "bge", 3);
+    addEntry(opTable, "blt", 3);
+    addEntry(opTable, "bgt", 3);
+    addEntry(opTable, "ble", 3);
+    addEntry(opTable, "b", 3);
+    
+    addEntry(opTable, "lsl", 4);
+    addEntry(opTable, "andeq", 4);
+}
