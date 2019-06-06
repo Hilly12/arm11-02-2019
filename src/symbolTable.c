@@ -67,35 +67,39 @@ SymbolTable *createOpcodeTable(void) {
     addEntry(opTable, "bgt", 0xc);
     addEntry(opTable, "ble", 0xd);
     addEntry(opTable, "b", 0xe);
+
+    return opTable;
 }
 
 SymbolTable *createParseTypeTable(void) {
-    SymbolTable *opTable = createTable();
-    addEntry(opTable, "and", 0);
-    addEntry(opTable, "eor", 0);
-    addEntry(opTable, "sub", 0);
-    addEntry(opTable, "rsb", 0);
-    addEntry(opTable, "add", 0);
-    addEntry(opTable, "tst", 0);
-    addEntry(opTable, "teq", 0);
-    addEntry(opTable, "cmp", 0);
-    addEntry(opTable, "orr", 0);
-    addEntry(opTable, "mov", 0);
+    SymbolTable *parseTypeTable = createTable();
+    addEntry(parseTypeTable, "and", 0);
+    addEntry(parseTypeTable, "eor", 0);
+    addEntry(parseTypeTable, "sub", 0);
+    addEntry(parseTypeTable, "rsb", 0);
+    addEntry(parseTypeTable, "add", 0);
+    addEntry(parseTypeTable, "tst", 0);
+    addEntry(parseTypeTable, "teq", 0);
+    addEntry(parseTypeTable, "cmp", 0);
+    addEntry(parseTypeTable, "orr", 0);
+    addEntry(parseTypeTable, "mov", 0);
 
-    addEntry(opTable, "mul", 1);
-    addEntry(opTable, "mla", 1);
+    addEntry(parseTypeTable, "mul", 1);
+    addEntry(parseTypeTable, "mla", 1);
 
-    addEntry(opTable, "ldr", 2);
-    addEntry(opTable, "str", 2);
+    addEntry(parseTypeTable, "ldr", 2);
+    addEntry(parseTypeTable, "str", 2);
 
-    addEntry(opTable, "beq", 3);
-    addEntry(opTable, "bne", 3);
-    addEntry(opTable, "bge", 3);
-    addEntry(opTable, "blt", 3);
-    addEntry(opTable, "bgt", 3);
-    addEntry(opTable, "ble", 3);
-    addEntry(opTable, "b", 3);
+    addEntry(parseTypeTable, "beq", 3);
+    addEntry(parseTypeTable, "bne", 3);
+    addEntry(parseTypeTable, "bge", 3);
+    addEntry(parseTypeTable, "blt", 3);
+    addEntry(parseTypeTable, "bgt", 3);
+    addEntry(parseTypeTable, "ble", 3);
+    addEntry(parseTypeTable, "b", 3);
     
-    addEntry(opTable, "lsl", 4);
-    addEntry(opTable, "andeq", 4);
+    addEntry(parseTypeTable, "lsl", 4);
+    addEntry(parseTypeTable, "andeq", 4);
+
+    return parseTypeTable;
 }

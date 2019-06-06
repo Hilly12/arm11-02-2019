@@ -77,9 +77,18 @@ void runSymbolTableTests(void) {
     printf("Success\n\n");
 }
 
+void runParserTests(void) {
+    printf("Starting parser debug\n");
+
+    // char code[] = "add r1 r2 r3";
+
+    // char *mnemonic = 
+}
+
 int main(void) {
     runSymbolTableTests();
     runStringToStringArrayTests();
+    runParserTests();
     getchar();
     return EXIT_SUCCESS;
 }

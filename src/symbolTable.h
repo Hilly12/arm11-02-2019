@@ -20,4 +20,8 @@ void addEntry(SymbolTable *symTable, char *label, uint32_t address);
 // Searches symbol table for label and returns corresponding address
 int getAddress(SymbolTable const *symTable, char *label);
 
+SymbolTable *createOpcodeTable(void);
+
+SymbolTable *createParseTypeTable(void);
+
 #endif

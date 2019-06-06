@@ -26,7 +26,8 @@ uint8_t parseRegister(char *token) {
 }
 
 uint16_t parseOperand(char *token) {
-    char *op = strtok_r(token, "r#=", NULL);
+    char *save;
+    char *op = strtok_r(token, "r#=", &save);
     if (strstr(token, "x") != NULL) { // Hex
         return strtol(op, NULL, 16);
     } else { // Number or Register
@@ -133,6 +134,11 @@ int parseDataTransfer(char* code, char* save, ParserData *dat) {
 
     token = strtok_r(code, ", ", &save);
     Rd = parseRegister(token);
+    I = 0;
+    P = 0;
+    U = 0;
+    L = 0;
+    Offset = 0;
 
     return (Cond << 28) | (1 << 26) | (I << 25) | (P << 24)
             | (U << 23) | (L << 20) | (Rn << 16) | (Rd << 12)
@@ -197,7 +203,7 @@ int processInstruction(char *code, ParserData *dat) {
         parseSpecial
     };
 
-    return parseDataProcessing(code, save, dat);
+    return parsers[getAddress(dat->parseTypeTable, dat->mnemonic)](code, save, dat);
 }
 
 // Uses array of pointers to point to 
@@ -233,8 +239,7 @@ int main(int argc, char **argv) {
 
     // Generate symbol table (Pass 1)
     SymbolTable *symbolTable = createTable();
-    // NOTE: Not actually sure we need to allocate memory (strdup might do it for us)
-    char *label = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
+    char *label;
     int address = 0;
     for (int i = 0; i < numLines; i++) {
         if (strstr(instructionsStrArray[i], ":") != NULL) { // If ':' is in the line
@@ -249,13 +254,16 @@ int main(int argc, char **argv) {
 
     // Generate binary encoding for each line (Pass 2)
     
-    SymbolTable *opcodeTable = createTable();
-    SymbolTable *parseTypeTable = createTable();
+    SymbolTable *opcodeTable = createOpcodeTable();
+    SymbolTable *parseTypeTable = createParseTypeTable();
 
-    int *instructions = malloc(sizeof(int) * numLines);;
-    ParserData *dat = malloc(sizeof(ParserData));
+    int *instructions = (int *) malloc(sizeof(int) * numLines);;
+    ParserData *dat = (ParserData *) malloc(sizeof(ParserData));
     dat->labelTable = symbolTable;
+    dat->opcodeTable = opcodeTable;
+    dat->parseTypeTable = parseTypeTable;
     dat->lastAddress = address * 4;
+
     for (int i = 0; i < numLines; i++) {
         if (strstr(instructionsStrArray[i], ":") == NULL) {
             dat->currentAddress = i * 4;
@@ -265,6 +273,5 @@ int main(int argc, char **argv) {
 
     // Save file
     saveToFile(argv[2], instructions);
-
     return EXIT_SUCCESS;
 }
