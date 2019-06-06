@@ -251,12 +251,14 @@ int main(int argc, char **argv) {
 
     // Generate binary encoding for each line (Pass 2)
     
-    SymbolTable *opcodeTable = createTable();
-    SymbolTable *parseTypeTable = createTable();
+    SymbolTable *opcodeTable = createOpcodeTable();
+    SymbolTable *parseTypeTable = createParseTypeTable();
 
     int *instructions = malloc(sizeof(int) * numLines);;
     ParserData *dat = malloc(sizeof(ParserData));
     dat->labelTable = symbolTable;
+    dat->opcodeTable = opcodeTable;
+    dat->parseTypeTable = parseTypeTable;
     dat->lastAddress = address * 4;
     for (int i = 0; i < numLines; i++) {
         if (strstr(instructionsStrArray[i], ":") == NULL) {
