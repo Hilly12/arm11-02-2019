@@ -35,7 +35,7 @@ uint16_t parseOperand(char *token) {
     }
 }
 
-int parseDataProcessing(char* code, char* save, ParserData *dat) {
+int parseDataProcessing(char* save, ParserData *dat) {
     uint8_t Cond, Opcode, Rn, Rd, I, S;
     uint16_t Operand;
 
@@ -89,7 +89,7 @@ int parseDataProcessing(char* code, char* save, ParserData *dat) {
             | (S << 20) | (Rn << 16) | (Rd << 12) | Operand;
 }
 
-int parseMultiply(char* code, char* save, ParserData *dat) {
+int parseMultiply(char* save, ParserData *dat) {
     uint8_t Cond, A, S, Rd, Rn, Rs, Rm;
 
     Cond = 0xe;
@@ -121,7 +121,7 @@ int parseMultiply(char* code, char* save, ParserData *dat) {
             | (Rn << 12) | (Rs << 8) | (0x9 << 4) | Rm;
 }
 
-int parseDataTransfer(char* code, char* save, ParserData *dat) {
+int parseDataTransfer(char* save, ParserData *dat) {
     uint8_t Cond, I, P, U, L, Rn, Rd;
     uint16_t Offset;
 
@@ -137,7 +137,7 @@ int parseDataTransfer(char* code, char* save, ParserData *dat) {
     I = 0;
     P = 0;
     U = 0;
-    L = 0;
+    L = (dat->mnemonic[0] == 'l');
     Offset = 0;
 
     return (Cond << 28) | (1 << 26) | (I << 25) | (P << 24)
@@ -150,7 +150,7 @@ uint32_t generateOffset(SymbolTable * symbolTable, char *label, int currentAddre
     return (getAddress(symbolTable, label) - currentAddress - 8) >> 2;
 }
 
-int parseBranch(char* code, char* save, ParserData *dat) {
+int parseBranch(char* save, ParserData *dat) {
     char *token;
     uint8_t Cond;
     uint32_t Offset;
@@ -163,39 +163,39 @@ int parseBranch(char* code, char* save, ParserData *dat) {
     return (Cond << 28) | (0xa << 24) | Offset;
 }
 
-int parseSpecial(char* code, char* save, ParserData *dat) {
+int parseSpecial(char* save, ParserData *dat) {
     // andeq
     if (strcmp(dat->mnemonic, "andeq") == 0) {
         return 0;
     }
 
     // lsl
-    // char *token;
-    // uint8_t Cond, Opcode, Rn, Rd, I, S;
-    // uint16_t Operand;
 
-    // Cond = 0xe;
-    // Opcode = 0xd;
-    // S = 0;
+    char *token;
+    uint8_t Cond, Opcode, Rn, Rd, I, S;
+    uint16_t Operand;
 
-    // token = strtok_r(code, ", ", &save);
-    // Rn = parseRegister(token);
-    // Rd = 0;
+    Cond = 0xe;
+    Opcode = 0xd;
+    S = 0;
 
-    // token = strtok_r(code, ", ", &save);
-    // I = (token[0] == '#');
-    // Operand = parseOperand(token);
+    token = strtok_r(NULL, ", ", &save);
+    Rn = parseRegister(token);
+    Rd = 0;
 
-    // return (Cond << 28) | (I << 25) | (Opcode << 21) 
-    //         | (S << 20) | (Rn << 16) | (Rd << 12) | Operand;
-    return 0;
+    token = strtok_r(NULL, ", ", &save);
+    I = (token[0] == '#');
+    Operand = parseOperand(token);
+
+    return (Cond << 28) | (I << 25) | (Opcode << 21) 
+            | (S << 20) | (Rn << 16) | (Rd << 12) | Operand;
 }
 
 int processInstruction(char *code, ParserData *dat) {
     char *save;
     dat->mnemonic = strtok_r(code, " ", &save);
 
-    int (*parsers[]) (char*, char*, ParserData*) = { 
+    int (*parsers[]) (char*, ParserData*) = { 
         parseDataProcessing,
         parseMultiply,
         parseDataTransfer,
@@ -203,11 +203,11 @@ int processInstruction(char *code, ParserData *dat) {
         parseSpecial
     };
 
-    return parsers[getAddress(dat->parseTypeTable, dat->mnemonic)](code, save, dat);
+    return parsers[getAddress(dat->parseTypeTable, dat->mnemonic)](save, dat);
 }
 
 //Free space allocated to a 2d array
-void free2dArray(char **array, unsigned int rows) {
+void free2dArray(char **array, int rows) {
     for (int i = 0; i < rows; i++) {
         free(array[i]);
     }
@@ -217,24 +217,32 @@ void free2dArray(char **array, unsigned int rows) {
 int main(int argc, char **argv) {
     int numLines = 0;
 
+    if (argc != 3) {
+        perror("Wrong number of arguments");
+        return 1;
+    
+    
+    }
 
     // Load File into String Array
-    char **instructionsStrArray = loadFile(argv, MAX_LINE_LENGTH, &numLines);
+    // char **instructionsStrArray = loadFile(argv, MAX_LINE_LENGTH, &numLines);
 
     // Generate symbol table (Pass 1)
     SymbolTable *symbolTable = createTable();
     char *label;
     int instructionCount = 0;
 
-    for (int i = 0; i < numLines; i++) {
-        if (strstr(instructionsStrArray[i], ":") != NULL) { // If ':' is in the line
-            label = strdup(instructionsStrArray[i]);
-            label[strlen(label) - 1] = '\0'; // Add sentinal character to the end of label
-            addEntry(symbolTable, label, instructionCount * 4);
-        } else {
-            instructionCount++;
-        }
-    }
+    // for (int i = 0; i < numLines; i++) {
+    //     if (strstr(instructionsStrArray[i], ":") != NULL) { // If ':' is in the line
+    //         label = strdup(instructionsStrArray[i]);
+    //         label[strlen(label) - 1] = '\0'; // Add sentinal character to the end of label
+    //         addEntry(symbolTable, label, instructionCount * 4);
+    //     } else {
+    //         instructionCount++;
+    //     }
+    // }
+
+    printf("Pass 1 finished\n");
     
     // Generate binary encoding for each line (Pass 2)
     
@@ -250,8 +258,13 @@ int main(int argc, char **argv) {
 
     instructionCount = 0;
 
+    printf("Data for pass 2 initialized\n");
+
+    printf("\n%d\n", numLines);
+
     for (int i = 0; i < numLines; i++) {
         if (strstr(instructionsStrArray[i], ":") == NULL) {
+            printf("yeet\n");
             dat->currentAddress = i * 4;
             instructions[instructionCount] = processInstruction(instructionsStrArray[i], dat);
             instructionCount++;

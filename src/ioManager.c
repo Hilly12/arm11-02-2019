@@ -2,9 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_LINE_LENGTH 511
-
-char **init2dCharArray(unsigned int rows, unsigned int cols) {
+char **init2dCharArray(int rows, int cols) {
     char **res = (char **) malloc(rows * sizeof(char *));
     res[0] = (char *) malloc(rows * cols * sizeof(char));
     for (int i = 1; i < rows; i++) {
@@ -19,10 +17,12 @@ char **loadFile(char **argv, int maxLineLength, int *numLines) {
 
     // Get number of lines
     int lines = 0;
-    int ch = 0;
+    char ch = '\0';
+    char lastCh =  '\0';
     while (!feof(file)) {
+        lastCh = ch;
         ch = fgetc(file);
-        if ((ch == '\n') || (ch == EOF)) {
+        if ((ch == '\n') || (ch == EOF && lastCh != '\n')) {
             lines++;
         }
     }
@@ -30,7 +30,7 @@ char **loadFile(char **argv, int maxLineLength, int *numLines) {
 
     *numLines = lines;
 
-    char **array = init2dCharArray(lines, MAX_LINE_LENGTH);
+    char **array = init2dCharArray(lines, maxLineLength);
 
     int i = 0;
     int j = 0;

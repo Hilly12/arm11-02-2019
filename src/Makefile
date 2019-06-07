@@ -1,5 +1,5 @@
 CC      = gcc
-CFLAGS  = -Wall -g -DEFAULT_SOURCE -std=c99 -pedantic
+CFLAGS  = -Wall -Wextra -Werror -g -D_DEFAULT_SOURCE -std=c11 -pedantic
 DEPS    = pipeline.h decode.h execute.h utils.h definitions.h
 DEPSAS  = symbolTable.h ioManager.h
 OBJ     = emulate.o pipeline.o decode.o execute.o utils.o

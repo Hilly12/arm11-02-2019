@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 // Uses array of pointers to point to 
-char **init2dCharArray(unsigned int rows, unsigned int cols);
+char **init2dCharArray(int rows, int cols);
 
 // Loads the file into a string and counts the number of lines
 // of assembly code in the file
