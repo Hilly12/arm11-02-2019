@@ -146,8 +146,8 @@ int parseDataTransfer(char* code, char* save, ParserData *dat) {
 }
 
 // Generate offset for branch instruction
-int generateOffset(SymbolTable * symbolTable, char *label, int currentAddress) {
-    return (getAddress(symbolTable, label) - currentAddress - 4) >> 2;
+uint32_t generateOffset(SymbolTable * symbolTable, char *label, int currentAddress) {
+    return (getAddress(symbolTable, label) - currentAddress - 8) >> 2;
 }
 
 int parseBranch(char* code, char* save, ParserData *dat) {
@@ -158,7 +158,7 @@ int parseBranch(char* code, char* save, ParserData *dat) {
     Cond = getAddress(dat->opcodeTable, dat->mnemonic) & 0xf;
 
     token = strtok_r(NULL, " ", &save);
-    Offset = generateOffset(dat->labelTable, token, dat->currentAddress); // TODO: pass address
+    Offset = generateOffset(dat->labelTable, token, dat->currentAddress);
 
     return (Cond << 28) | (0xa << 24) | Offset;
 }
@@ -221,23 +221,18 @@ int main(int argc, char **argv) {
     // Load File into String Array
     char **instructionsStrArray = loadFile(argv, MAX_LINE_LENGTH, &numLines);
 
-    for (int i = 0; i < numLines; i++) {
-        printf(instructionsStrArray[i]);
-        printf("\n");
-    }
-
     // Generate symbol table (Pass 1)
     SymbolTable *symbolTable = createTable();
     char *label;
-    int address = 0;
+    int instructionCount = 0;
 
     for (int i = 0; i < numLines; i++) {
         if (strstr(instructionsStrArray[i], ":") != NULL) { // If ':' is in the line
             label = strdup(instructionsStrArray[i]);
             label[strlen(label) - 1] = '\0'; // Add sentinal character to the end of label
-            addEntry(symbolTable, label, address * 4);
+            addEntry(symbolTable, label, instructionCount * 4);
         } else {
-            address++;
+            instructionCount++;
         }
     }
     
@@ -246,24 +241,24 @@ int main(int argc, char **argv) {
     SymbolTable *opcodeTable = createOpcodeTable();
     SymbolTable *parseTypeTable = createParseTypeTable();
 
-    int *instructions = (int *) malloc(sizeof(int) * numLines);;
+    int *instructions = (int *) malloc(sizeof(int) * instructionCount);
     ParserData *dat = (ParserData *) malloc(sizeof(ParserData));
     dat->labelTable = symbolTable;
     dat->opcodeTable = opcodeTable;
     dat->parseTypeTable = parseTypeTable;
-    dat->lastAddress = address * 4;
+    dat->lastAddress = instructionCount * 4;
+
+    instructionCount = 0;
 
     for (int i = 0; i < numLines; i++) {
         if (strstr(instructionsStrArray[i], ":") == NULL) {
             dat->currentAddress = i * 4;
-            printf(instructionsStrArray[i]);
-            printf(": ");
-            instructions[i] = processInstruction(instructionsStrArray[i], dat);
-            printf("%x\n", instructions[i]);
+            instructions[instructionCount] = processInstruction(instructionsStrArray[i], dat);
+            instructionCount++;
         }
     }
 
     // Save file
-    saveToFile(argv[2], instructions);
+    saveToFile(argv[2], instructions, instructionCount);
     return EXIT_SUCCESS;
 }
