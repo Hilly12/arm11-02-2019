@@ -1,8 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
 
-typedef char BYTE;
-
 // Uses array of pointers to point to 
 char **init2dCharArray(unsigned int rows, unsigned int cols);
 
@@ -12,7 +10,7 @@ char **loadFile(char **argv, int maxLineLength, int *numLines);
 
 // Function that converts an array of instructions to an array of bytes
 // in the style that appears to how it does in memory
-BYTE *instructionsToMemory(BYTE *memory, int *instructions);
+void instructionsToMemory(uint8_t *memory, int const *instructions, int instructionCount);
 
 // Given an array of binary instructions, saves to a binary file how it would be represented in memory
-void saveToFile(char *filename, int *instructions);
+void saveToFile(char *filename, int const *instructions, int instructionCount);

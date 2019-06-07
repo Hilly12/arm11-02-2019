@@ -50,25 +50,33 @@ char **loadFile(char **argv, int maxLineLength, int *numLines) {
     return array;
 }
 
-BYTE * instructionsToMemory(BYTE *memory, int *instructions) {
-    size_t n = sizeof(instructions) / sizeof(int);
+void instructionsToMemory(uint8_t *memory, int const *instructions, int instructionCount) {
     int instrBuffer;
-    for (int i = 0; i < n; ++i) {
+    for (int i = 0; i < instructionCount; i++) {
         instrBuffer = instructions[i];
 
-        memory[i * 4] = (instrBuffer & 0xFF);
-        memory[i * 4 + 1] = ((instrBuffer >> 8) & 0xFF);
-        memory[i * 4 + 2] = ((instrBuffer >> 16) & 0xFF);
-        memory[i * 4 + 3] = ((instrBuffer >> 24) & 0xFF);
+        for (int j = 0; j < 4; j++) {
+            memory[i * 4 + j] = instrBuffer & 0xff;
+            instrBuffer = instrBuffer >> 8;
+        }
     }
-    return memory;
 }
 
-void saveToFile(char *filename, int *instructions) {
+void saveToFile(char *filename, int const *instructions, int instructionCount) {
     FILE *fileOut;
     fileOut = fopen(filename, "wb");
-    BYTE memory[sizeof(instructions)];
-    BYTE *output = instructionsToMemory(memory, instructions);
-    fwrite(output, sizeof(memory), 1, fileOut);
+
+    int memorySize = instructionCount * 4;
+
+    uint8_t *memory = (uint8_t *) malloc(sizeof(uint8_t) * memorySize);
+
+    instructionsToMemory(memory, instructions, instructionCount);
+    // for (int i = 0; i < instructionCount; i++) {
+    //     printf("%d: %x\n", i * 4, memory[i * 4]);
+    //     printf("%d: %x\n", i * 4 + 1, memory[i * 4 + 1]);
+    //     printf("%d: %x\n", i * 4 + 2, memory[i * 4 + 2]);
+    //     printf("%d: %x\n", i * 4 + 3, memory[i * 4 + 3]);
+    // }
+    fwrite(memory, memorySize * sizeof(uint8_t), 1, fileOut);
     fclose(fileOut);
 }
