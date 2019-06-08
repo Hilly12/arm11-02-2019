@@ -1,7 +1,7 @@
 #include "pipeline.h"
 
 int main(int argc, char **argv) {
-    
+
     if (argc != 2) {
         perror("Wrong number of arguments");
         return 1;
@@ -17,6 +17,20 @@ int main(int argc, char **argv) {
     }
     for (uint32_t i = 0; i < MEMORY_SIZE; i++) {
         memory[i] = 0;
+    }
+
+    // Stores the GPIO addresses
+    uint8_t gpio[GPIOBYTES];
+    for (int i = 0; i < GPIOBYTES; i++) {
+        gpio[i] = 0;
+    }
+
+    // Stores the addresses that turn the GPIO on and off
+    uint8_t gpio_on[GPIO_ON_OFF_BYTES];
+    uint8_t gpio_off[GPIO_ON_OFF_BYTES];
+    for (int i = 0; i < GPIO_ON_OFF_BYTES; i++) {
+        gpio_on[i] = 0;
+        gpio_off[i] = 0;
     }
 
     // LOAD BINARY FILE INTO MEMORY
@@ -40,7 +54,7 @@ int main(int argc, char **argv) {
     // Third iteration onward (executing, decoding and fetching)
     while (1) {
         // Execute instruction
-        execute(registers, memory, &decodedInstr);
+        execute(registers, memory, gpio, gpio_on, gpio_off, &decodedInstr);
 
         // Break the loop if the last executed instruction was a HALT
         if (decodedInstr.type == ANDEQ) {
