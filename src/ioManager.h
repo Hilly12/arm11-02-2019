@@ -14,3 +14,7 @@ void instructionsToMemory(uint8_t *memory, int const *instructions, int instruct
 
 // Given an array of binary instructions, saves to a binary file how it would be represented in memory
 void saveToFile(char *filename, int const *instructions, int instructionCount);
+
+void write4ByteToMemory(uint8_t *memory, int data, int address);
+
+void save2File(char *filename, uint8_t *memory, int lastInstr);

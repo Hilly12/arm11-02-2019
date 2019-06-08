@@ -7,26 +7,26 @@
 #include "ioManager.h"
 
 #define MAX_LINE_LENGTH 511
+#define MEMORY_SIZE 65536
 
 typedef struct ParserData {
     char *mnemonic;
-    uint32_t currentAddress;
-    uint32_t lastAddress;
+    uint32_t currInstr;
+    uint32_t lastInstr;
     SymbolTable *opcodeTable;
     SymbolTable *labelTable;
     SymbolTable *parseTypeTable;
-    int *instructions;
+    uint8_t *memory;
+    uint8_t preIndexed;
 } ParserData;
 
 uint8_t parseRegister(char *token) {
-    uint8_t r = token[1] - '0';
-    if (token[2] == '\0') {
-        return r;
-    }
-    return r * 10 + (token[2] - '0');
+    char *save;
+    char *op = strtok_r(token, "r]", &save);
+    return strtol(op, NULL, 10);;
 }
 
-uint32_t parseExpression(char *token) {
+int32_t parseExpression(char *token) {
     char *save;
     char *op = strtok_r(token, "r#=", &save);
     if (strstr(token, "x") != NULL) { // Hex
@@ -47,12 +47,10 @@ int parseDataProcessing(char* save, ParserData *dat) {
     uint32_t Operand;
 
     Cond = 0xe;
-    
-    // TODO: add mnemonic to symbol table at start of program
     Opcode = getAddress(dat->opcodeTable, dat->mnemonic) & 0xf;
 
     char *token;
-    
+
     if (0x8 <= Opcode && Opcode <= 0xa) { // tst, teq, cmp
         Rd = 0;
         S = 1;
@@ -147,7 +145,7 @@ int parseMultiply(char* save, ParserData *dat) {
 
 int parseDataTransfer(char* save, ParserData *dat) {
     uint8_t Cond, I, P, U, L, Rn, Rd;
-    uint16_t Offset;
+    int16_t Offset;
 
     Cond = 0xe;
 
@@ -158,40 +156,48 @@ int parseDataTransfer(char* save, ParserData *dat) {
     token = strtok_r(NULL, ", ", &save);
     Rd = parseRegister(token);
 
-    token = strtok_r(NULL, " \n", &save);
+    token = strtok_r(NULL, "[, ]\n", &save);
+    U = 1;
     if (token[0] == '=' && L == 1) {
         uint32_t expression = parseExpression(token);
         if (expression > 0xff) {
-            dat->lastAddress += 4;
-            dat->instructions[dat->lastAddress / 4] = expression;
+            dat->lastInstr = dat->lastInstr + 1;
+            write4ByteToMemory(dat->memory, expression, dat->lastInstr * 4);
             P = 1;
-            U = 0;
             I = 0;
-            Offset = (dat->lastAddress - dat->currentAddress) + 8;
+            Rn = 0xf; // PC
+            Offset = (dat->lastInstr - dat->currInstr) * 4 - 8;
         } else {
             return toMoveInstruction(Rd, 1, expression, 0, 0);
         }
     } else {
-        char *subToken = strtok_r(NULL, "[]", &save), *subSave;
+        I = 0;
+        P = dat->preIndexed;
 
-        token = strtok_r(subToken, ", ", &subSave);
         Rn = parseRegister(token);
 
-        token = strtok_r(NULL, ", ", &subSave);
+        token = strtok_r(NULL, " ,]\n", &save);
         Offset = 0;
         if (token != NULL) {
-            Offset = parseExpression(token);
-            token = strtok_r(NULL, ", ", &subSave);
+            I = (token[0] != '#');
+            int32_t expression = parseExpression(token);
+            Offset = abs(expression) & 0xffff;
+            if (expression < 0) {
+                U = 0;
+            }
+            token = strtok_r(NULL, " ,]\n", &save);
             if (token != NULL) {
+                I = 1;
                 uint8_t shiftType;
                 uint32_t shiftOperand;
                 int imm = 0;
                 shiftType = getAddress(dat->opcodeTable, token) & 0xf;
                 
-                token = strtok_r(NULL, " \n", &subSave);
+                token = strtok_r(NULL, " ,]\n", &save);
                 imm = (token[0] == '#');
                 shiftOperand = parseExpression(token);
                 if (imm) {
+
                     Offset = ((shiftOperand << 7) | (shiftType << 5) | Offset) & 0xfff;
                 } else {
                     Offset = ((shiftOperand << 8) | (shiftType << 5) | (1 << 4) | Offset) & 0xfff;
@@ -206,8 +212,8 @@ int parseDataTransfer(char* save, ParserData *dat) {
 }
 
 // Generate offset for branch instruction
-int generateOffset(SymbolTable * symbolTable, char *label, int currentAddress) {
-    return (((int) getAddress(symbolTable, label)) - currentAddress - 8) >> 2;
+int generateBranchOffset(SymbolTable * symbolTable, char *label, int currInstr) {
+    return (((int) getAddress(symbolTable, label)) - currInstr - 8) >> 2;
 }
 
 int parseBranch(char* save, ParserData *dat) {
@@ -218,9 +224,9 @@ int parseBranch(char* save, ParserData *dat) {
     Cond = getAddress(dat->opcodeTable, dat->mnemonic) & 0xf;
 
     token = strtok_r(NULL, " \n", &save);
-    Offset = generateOffset(dat->labelTable, token, dat->currentAddress);
+    Offset = generateBranchOffset(dat->labelTable, token, dat->currInstr * 4);
 
-    return (Cond << 28) | (0xa << 24) | Offset;
+    return (Cond << 28) | (0xa << 24) | (Offset & 0xffffff);
 }
 
 int parseSpecial(char* save, ParserData *dat) {
@@ -232,27 +238,24 @@ int parseSpecial(char* save, ParserData *dat) {
     // lsl
 
     char *token;
-    uint8_t Cond, Opcode, Rn, Rd, I, S;
+    uint8_t Rn;
     uint16_t Operand;
-
-    Cond = 0xe;
-    Opcode = 0xd;
-    S = 0;
 
     token = strtok_r(NULL, ", ", &save);
     Rn = parseRegister(token);
-    Rd = 0;
 
     token = strtok_r(NULL, ", ", &save);
-    I = (token[0] == '#');
     Operand = parseExpression(token);
 
-    return (Cond << 28) | (I << 25) | (Opcode << 21) 
-            | (S << 20) | (Rn << 16) | (Rd << 12) | Operand;
+    return toMoveInstruction(Rn, 0, Rn, 0, Operand);
 }
 
 int processInstruction(char *code, ParserData *dat) {
     char *save;
+
+    // Only relevant for ldr, str
+    dat->preIndexed = (strstr(code, "],") == NULL);
+
     dat->mnemonic = strtok_r(code, " ", &save);
 
     int (*parsers[]) (char*, ParserData*) = { 
@@ -309,23 +312,25 @@ int main(int argc, char **argv) {
     
     SymbolTable *opcodeTable = createOpcodeTable();
     SymbolTable *parseTypeTable = createParseTypeTable();
-
-    int *instructions = (int *) malloc(sizeof(int) * instructionCount);
     ParserData *dat = (ParserData *) malloc(sizeof(ParserData));
+    uint8_t *memory = (uint8_t *) malloc(sizeof(uint8_t) * MEMORY_SIZE);
+
     dat->labelTable = symbolTable;
     dat->opcodeTable = opcodeTable;
     dat->parseTypeTable = parseTypeTable;
-    dat->lastAddress = instructionCount * 4;
-    dat->instructions = instructions;
+    dat->lastInstr = instructionCount - 1;
+    dat->memory = memory;
 
     instructionCount = 0;
+    int currentInstruction;
 
     printf("Data for pass 2 initialized\n");
 
     while(fgets(line, MAX_LINE_LENGTH, file) != NULL) {
         if (strstr(line, ":") == NULL && strcmp(line, "\n")) {
-            dat->currentAddress = instructionCount * 4;
-            instructions[instructionCount] = processInstruction(line, dat);
+            dat->currInstr = instructionCount;
+            currentInstruction = processInstruction(line, dat);
+            write4ByteToMemory(memory, currentInstruction, instructionCount * 4);
             instructionCount++;
         }
     }
@@ -335,7 +340,7 @@ int main(int argc, char **argv) {
     printf("Pass 2 finished\n");
 
     // Save file
-    saveToFile(argv[2], instructions, instructionCount);
+    save2File(argv[2], memory, dat->lastInstr);
 
     return EXIT_SUCCESS;
 }

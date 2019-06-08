@@ -62,6 +62,14 @@ void instructionsToMemory(uint8_t *memory, int const *instructions, int instruct
     }
 }
 
+void write4ByteToMemory(uint8_t *memory, int instruction, int address) {
+    int instrBuffer = instruction;
+    for (int j = 0; j < 4; j++) {
+        memory[address + j] = instrBuffer & 0xff;
+        instrBuffer = instrBuffer >> 8;
+    }
+}
+
 void saveToFile(char *filename, int const *instructions, int instructionCount) {
     FILE *fileOut;
     fileOut = fopen(filename, "wb");
@@ -79,4 +87,11 @@ void saveToFile(char *filename, int const *instructions, int instructionCount) {
     // }
     fwrite(memory, memorySize * sizeof(uint8_t), 1, fileOut);
     fclose(fileOut);
+}
+
+void save2File(char *filename, uint8_t *memory, int lastInstr) {
+    FILE *file;
+    file = fopen(filename, "wb");
+    fwrite(memory, (lastInstr + 1) * 4 * sizeof(uint8_t), 1, file);
+    fclose(file);
 }
