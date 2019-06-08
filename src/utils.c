@@ -109,6 +109,30 @@ void multiplyingUpdateCPSR(uint32_t *cpsr, uint32_t const *result) {
     }
 }
 
+void gpioAccessPrint(uint32_t *address) {
+    if (*address <= GPIO_0_9_LAST_BYTE) {
+        printf("One GPIO pin from 0 to 9 has been accessed\n");
+    } else if (*address <= GPIO_10_19_LAST_BYTE) {
+        printf("One GPIO pin from 10 to 19 has been accessed\n");
+    } else {
+        printf("One GPIO pin from 20 to 29 has been accessed\n");
+    }
+}
+
+void load(uint32_t const *address, uint8_t const *memory, uint32_t *rdRegister) {
+    *rdRegister = (((((memory[*address + 3] << 8) |
+                     memory[*address + 2]) << 8) |
+                   memory[*address + 1]) << 8) |
+                 memory[*address];
+}
+
+void store(uint32_t const *address, uint8_t *memory, uint32_t const *rdRegister) {
+    memory[*address] = *rdRegister & 0xff;
+    memory[*address + 1] = (*rdRegister >> 8) & 0xff;
+    memory[*address + 2] = (*rdRegister >> 16) & 0xff;
+    memory[*address + 3] = (*rdRegister >> 24) & 0xff;
+}
+
 void output(uint32_t const * registers, uint8_t const * memory) {
 
     // Print registers
@@ -122,8 +146,10 @@ void output(uint32_t const * registers, uint8_t const * memory) {
     // Print non-zero memory
     printf("Non-zero memory:\n");
     for (uint32_t i = 0; i < MEMORY_SIZE; i += 4) {
-        int32_t mem = (memory[i] << 24) | (memory[i + 1] << 16)
-                      | (memory[i + 2] << 8) | memory[i + 3];
+        int32_t mem = (((((memory[i] << 8) |
+                          memory[i + 1]) << 8) |
+                        memory[i + 2]) << 8) |
+                      memory[i + 3];
         if (mem != 0) {
             printf("0x%08x: 0x%08x\n", i, mem);
         }

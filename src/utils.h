@@ -16,6 +16,12 @@ void processingUpdateCPSR(uint32_t *cpsr, uint32_t const *result, uint8_t const 
 
 void multiplyingUpdateCPSR(uint32_t *cpsr, uint32_t const *result);
 
+void gpioAccessPrint(uint32_t *address);
+
+void load(uint32_t const *address, uint8_t const *memory, uint32_t *rdRegister);
+
+void store(uint32_t const *address, uint8_t *memory, uint32_t const *rdRegister);
+
 void output(uint32_t const * registers, uint8_t const * memory);
 
 #endif

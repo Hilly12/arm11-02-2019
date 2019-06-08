@@ -34,6 +34,15 @@
 #define LSR 1
 #define ASR 2
 #define ROR 3
+#define GPIOBYTES 12
+#define GPIO_ON_OFF_BYTES 4
+#define GPIO_0_9_FIRST_BYTE 0x20200000
+#define GPIO_0_9_LAST_BYTE 0x20200003
+#define GPIO_10_19_LAST_BYTE 0x20200007
+#define GPIO_20_29_FIRST_BYTE 0x20200008
+#define GPIO_20_29_LAST_BYTE 0x2020000b
+#define GPIO_ON_FIRST_BYTE 0x2020001C
+#define GPIO_OFF_FIRST_BYTE 0x20200028
 
 typedef struct DecodedInstruction {
     uint8_t type; // Processing, Mul, Mla, Transferring, Branch
