@@ -3,8 +3,8 @@
 // Divides the instruction into 8 entries of the instr array each containing 4 bits of the instruction
 void fetch(uint32_t const *pcVal, uint8_t const *memory, uint8_t *instr) {
     for (int8_t i = 0; i < 4; i++) {
-        instr[i << 1] = memory[*pcVal + 3 - i] >> 4;
-        instr[(i << 1) + 1] = memory[*pcVal + 3 - i] & 0xf;
+        instr[i * 2] = memory[*pcVal + 3 - i] >> 4;
+        instr[i * 2 + 1] = memory[*pcVal + 3 - i] & 0xf;
     }
 }
 

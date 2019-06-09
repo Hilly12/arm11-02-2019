@@ -1,44 +1,5 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-
-#include "symbolTable.h"
-#include "ioManager.h"
-#include "ioManager.c"
-#include "symbolTable.c"
-
-char **init2dCharArray(int rows, int cols) {
-    char **res = (char **) malloc(rows * sizeof(char *));
-    res[0] = (char *) malloc(rows * cols * sizeof(char));
-    for (int i = 1; i < rows; i++) {
-        res[i] = res[i - 1] + cols;
-    }
-    return res;
-}
-
-void runStringToStringArrayTests(void) {
-
-    printf("Starting string to string array debug\n");
-
-    char code[] = "mov r1, #30\nldr r2, [r0]\nadd r1, r1, #20";
-    char **code2D = init2dCharArray(3, 511);
-    fileToArrayLineByLine(3, code, code2D);
-
-    if (strcmp(code2D[0], "mov r1, #30") == 0) {
-        printf("First element checked\n");
-    }
-
-    if (strcmp(code2D[1], "ldr r2, [r0]") == 0) {
-        printf("Second element checked\n");
-    }
-
-    if (strcmp(code2D[2], "add r1, r1, #20") == 0) {
-        printf("Third element checked\n");
-    }
-
-    printf("Success\n\n");
-}
+#include "symbol_table.h"
+#include "symbol_table.c"
 
 void runSymbolTableTests(void) {
     printf("Starting symbol table debug\n");
@@ -77,18 +38,8 @@ void runSymbolTableTests(void) {
     printf("Success\n\n");
 }
 
-void runParserTests(void) {
-    printf("Starting parser debug\n");
-
-    // char code[] = "add r1 r2 r3";
-
-    // char *mnemonic = 
-}
-
 int main(void) {
     runSymbolTableTests();
-    runStringToStringArrayTests();
-    runParserTests();
     getchar();
     return EXIT_SUCCESS;
 }

@@ -1,15 +1,4 @@
-#include "symbolTable.h"
-
-struct entry {
-    char *label;
-    uint32_t address;
-    struct entry *prev;
-};
-
-struct symbolTable {
-    Entry *tail;
-    uint32_t size;
-};
+#include "symbol_table.h"
 
 SymbolTable *createTable(void) {
     SymbolTable *symTable = malloc(sizeof(SymbolTable));
@@ -18,7 +7,7 @@ SymbolTable *createTable(void) {
     return symTable;
 }
 
-void addEntry(SymbolTable *symTable, char *label, uint32_t address) {
+void addEntry(SymbolTable *symTable, char *label, int address) {
     Entry *e = malloc(sizeof(Entry));
     e->label = label;
     e->address = address;
@@ -27,7 +16,6 @@ void addEntry(SymbolTable *symTable, char *label, uint32_t address) {
     symTable->tail = e;
 
     symTable->size += 1;
-
 }
 
 int getAddress(SymbolTable const *symTable, char *label) {
@@ -38,7 +26,7 @@ int getAddress(SymbolTable const *symTable, char *label) {
         }
         current = current->prev;
     }
-    return EXIT_FAILURE;
+    return 1;
 }
 
 SymbolTable *createOpcodeTable(void) {
