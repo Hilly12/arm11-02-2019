@@ -1,14 +1,14 @@
 #include "pipeline.h"
 
 // Divides the instruction into 8 entries of the instr array each containing 4 bits of the instruction
-void fetch(uint32_t const *pcVal, uint8_t const *memory, uint8_t *instr) {
+void fetch(uint32_t const *pc_val, uint8_t const *memory, uint8_t *instr) {
     for (int8_t i = 0; i < 4; i++) {
-        instr[i * 2] = memory[*pcVal + 3 - i] >> 4;
-        instr[i * 2 + 1] = memory[*pcVal + 3 - i] & 0xf;
+        instr[i << 1] = memory[*pc_val + 3 - i] >> 4;
+        instr[(i << 1) + 1] = memory[*pc_val + 3 - i] & 0xf;
     }
 }
 
-void decode(uint8_t const *instr, uint32_t const *registers, DecodedInstruction *decodedInstr) {
+void decode(uint8_t const *instr, uint32_t const *registers, Decoded_Instruction *decoded_instr) {
     // Checking if the instruction is an andeq
     uint8_t cnt = 0;
     for (uint8_t i = 0; i < 8; i++) {
@@ -19,46 +19,46 @@ void decode(uint8_t const *instr, uint32_t const *registers, DecodedInstruction 
         }
     }
     if (cnt == 8) {
-        decodedInstr->type = ANDEQ;
+        decoded_instr->type = ANDEQ;
         return;
     }
 
     // Checking if the instruction is valid (if the condition is satisfied)
-    if (!isConditionSatisfied(&registers[CPSR_REF], &instr[0])) {
-        decodedInstr->type = INVALID;
+    if (!is_condition_satisfied(&registers[CPSR_REF], &instr[0])) {
+        decoded_instr->type = INVALID;
         return;
     }
 
     // Decoding the instruction if it is valid (finding its type and the relevant operands)
     if (instr[1] < 0x4) { // Data Processing or Multiply
         if (instr[6] == 0x9) { // Multiply
-            decodeMultiplying(instr, decodedInstr);
+            decode_multiplying(instr, decoded_instr);
         } else { // Data Processing
-            decodeProcessing(instr, registers, decodedInstr);
+            decode_processing(instr, registers, decoded_instr);
         }
     } else { // Single Data Transfer or Branch
         if (instr[1] == 0xa) { // Branch
-            decodeBranch(instr, decodedInstr);
+            decode_branch(instr, decoded_instr);
         } else { // Single Data Transfer
-            decodeTransferring(instr, registers, decodedInstr);
+            decode_transferring(instr, registers, decoded_instr);
         }
     }
 }
 
-void execute(uint32_t *registers, uint8_t *memory, uint8_t *gpio, uint8_t *gpio_on, 
-        uint8_t *gpio_off, DecodedInstruction *decodedInstr) {
-    switch (decodedInstr->type) {
+void execute(uint32_t *registers, uint8_t *memory, uint8_t *gpio, uint8_t *gpio_on,
+             uint8_t *gpio_off, Decoded_Instruction *decoded_instr) {
+    switch (decoded_instr->type) {
         case PROCESSING:
-            executeProcessing(registers, decodedInstr);
+            execute_processing(registers, decoded_instr);
             return;
         case MULTIPLYING:
-            executeMultiplying(registers, decodedInstr);
+            execute_multiplying(registers, decoded_instr);
             return;
         case TRANSFER:
-            executeTransferring(registers, memory, gpio, gpio_on, gpio_off, decodedInstr);
+            execute_transferring(registers, memory, gpio, gpio_on, gpio_off, decoded_instr);
             return;
         case BRANCH:
-            executeBranch(&registers[PC_REF], decodedInstr);
+            execute_branch(&registers[PC_REF], decoded_instr);
             return;
         default: // If the decoded instruction is INVALID or ANDEQ just return
             return;

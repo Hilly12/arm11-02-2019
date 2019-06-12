@@ -1,25 +1,26 @@
 #include "symbol_table.h"
 
-SymbolTable *createTable(void) {
-    SymbolTable *symTable = malloc(sizeof(SymbolTable));
-    symTable->tail = NULL;
-    symTable->size = 0;
-    return symTable;
+Symbol_Table *create_table(void) {
+    Symbol_Table *sym_table = malloc(sizeof(Symbol_Table));
+    sym_table->tail = NULL;
+    sym_table->size = 0;
+    return sym_table;
 }
 
-void addEntry(SymbolTable *symTable, char *label, int address) {
+void add_entry(Symbol_Table *sym_table, char *label, int address) {
     Entry *e = malloc(sizeof(Entry));
     e->label = label;
     e->address = address;
 
-    e->prev = symTable->tail;
-    symTable->tail = e;
+    e->prev = sym_table->tail;
+    sym_table->tail = e;
 
-    symTable->size += 1;
+    sym_table->size += 1;
+
 }
 
-int getAddress(SymbolTable const *symTable, char *label) {
-    Entry *current = symTable->tail;
+int get_address(Symbol_Table const *sym_table, char *label) {
+    Entry *current = sym_table->tail;
     while (current != NULL) {
         if (strcmp(current->label, label) == 0) {
             return current->address;
@@ -29,64 +30,64 @@ int getAddress(SymbolTable const *symTable, char *label) {
     return 1;
 }
 
-SymbolTable *createOpcodeTable(void) {
-    SymbolTable *opTable = createTable();
-    addEntry(opTable, "and", 0x0);
-    addEntry(opTable, "eor", 0x1);
-    addEntry(opTable, "sub", 0x2);
-    addEntry(opTable, "rsb", 0x3);
-    addEntry(opTable, "add", 0x4);
-    addEntry(opTable, "tst", 0x8);
-    addEntry(opTable, "teq", 0x9);
-    addEntry(opTable, "cmp", 0xa);
-    addEntry(opTable, "orr", 0xc);
-    addEntry(opTable, "mov", 0xd);
+Symbol_Table *create_opcode_table(void) {
+    Symbol_Table *opcode_table = create_table();
+    add_entry(opcode_table, "and", 0x0);
+    add_entry(opcode_table, "eor", 0x1);
+    add_entry(opcode_table, "sub", 0x2);
+    add_entry(opcode_table, "rsb", 0x3);
+    add_entry(opcode_table, "add", 0x4);
+    add_entry(opcode_table, "tst", 0x8);
+    add_entry(opcode_table, "teq", 0x9);
+    add_entry(opcode_table, "cmp", 0xa);
+    add_entry(opcode_table, "orr", 0xc);
+    add_entry(opcode_table, "mov", 0xd);
 
-    addEntry(opTable, "lsl", 0x0);
-    addEntry(opTable, "lsr", 0x1);
-    addEntry(opTable, "asr", 0x2);
-    addEntry(opTable, "ror", 0x3);
+    add_entry(opcode_table, "lsl", 0x0);
+    add_entry(opcode_table, "lsr", 0x1);
+    add_entry(opcode_table, "asr", 0x2);
+    add_entry(opcode_table, "ror", 0x3);
 
-    addEntry(opTable, "beq", 0x0);
-    addEntry(opTable, "bne", 0x1);
-    addEntry(opTable, "bge", 0xa);
-    addEntry(opTable, "blt", 0xb);
-    addEntry(opTable, "bgt", 0xc);
-    addEntry(opTable, "ble", 0xd);
-    addEntry(opTable, "b", 0xe);
+    add_entry(opcode_table, "beq", 0x0);
+    add_entry(opcode_table, "bne", 0x1);
+    add_entry(opcode_table, "bge", 0xa);
+    add_entry(opcode_table, "blt", 0xb);
+    add_entry(opcode_table, "bgt", 0xc);
+    add_entry(opcode_table, "ble", 0xd);
+    add_entry(opcode_table, "b", 0xe);
 
-    return opTable;
+    return opcode_table;
 }
 
-SymbolTable *createParseTypeTable(void) {
-    SymbolTable *parseTypeTable = createTable();
-    addEntry(parseTypeTable, "and", 0);
-    addEntry(parseTypeTable, "eor", 0);
-    addEntry(parseTypeTable, "sub", 0);
-    addEntry(parseTypeTable, "rsb", 0);
-    addEntry(parseTypeTable, "add", 0);
-    addEntry(parseTypeTable, "tst", 0);
-    addEntry(parseTypeTable, "teq", 0);
-    addEntry(parseTypeTable, "cmp", 0);
-    addEntry(parseTypeTable, "orr", 0);
-    addEntry(parseTypeTable, "mov", 0);
+Symbol_Table *create_parsetype_table(void) {
+    Symbol_Table *parsetype_table = create_table();
+    add_entry(parsetype_table, "and", 0);
+    add_entry(parsetype_table, "eor", 0);
+    add_entry(parsetype_table, "sub", 0);
+    add_entry(parsetype_table, "rsb", 0);
+    add_entry(parsetype_table, "add", 0);
+    add_entry(parsetype_table, "tst", 0);
+    add_entry(parsetype_table, "teq", 0);
+    add_entry(parsetype_table, "cmp", 0);
+    add_entry(parsetype_table, "orr", 0);
+    add_entry(parsetype_table, "mov", 0);
 
-    addEntry(parseTypeTable, "mul", 1);
-    addEntry(parseTypeTable, "mla", 1);
+    add_entry(parsetype_table, "mul", 1);
+    add_entry(parsetype_table, "mla", 1);
 
-    addEntry(parseTypeTable, "ldr", 2);
-    addEntry(parseTypeTable, "str", 2);
+    add_entry(parsetype_table, "ldr", 2);
+    add_entry(parsetype_table, "str", 2);
 
-    addEntry(parseTypeTable, "beq", 3);
-    addEntry(parseTypeTable, "bne", 3);
-    addEntry(parseTypeTable, "bge", 3);
-    addEntry(parseTypeTable, "blt", 3);
-    addEntry(parseTypeTable, "bgt", 3);
-    addEntry(parseTypeTable, "ble", 3);
-    addEntry(parseTypeTable, "b", 3);
-    
-    addEntry(parseTypeTable, "lsl", 4);
-    addEntry(parseTypeTable, "andeq", 4);
+    add_entry(parsetype_table, "beq", 3);
+    add_entry(parsetype_table, "bne", 3);
+    add_entry(parsetype_table, "bge", 3);
+    add_entry(parsetype_table, "blt", 3);
+    add_entry(parsetype_table, "bgt", 3);
+    add_entry(parsetype_table, "ble", 3);
+    add_entry(parsetype_table, "b", 3);
 
-    return parseTypeTable;
+    add_entry(parsetype_table, "lsl", 4);
+    add_entry(parsetype_table, "andeq", 4);
+
+    return parsetype_table;
 }

@@ -1,25 +1,25 @@
 #include "assemble_utils.h"
 
-void write4ByteToMemory(uint8_t *memory, int instruction, int address) {
-    int instrBuffer = instruction;
+int to_move_instruction(uint8_t Rd, uint8_t I, uint8_t operand, uint8_t shift_type, uint8_t shift_operand) {
+    return (0xe << 28) | (I << 25) | (0xd << 21) | (Rd << 12)
+           | (((shift_operand << 7) | (shift_type << 5) | operand) & 0xfff);
+}
+
+int generate_branch_offset(Symbol_Table *sym_table, char *label, int cuur_instr) {
+    return (((int) get_address(sym_table, label)) - cuur_instr - 8) >> 2;
+}
+
+void write_4byte_to_memory(uint8_t *memory, int instruction, int address) {
+    int instr_buffer = instruction;
     for (int j = 0; j < 4; j++) {
-        memory[address + j] = instrBuffer & 0xff;
-        instrBuffer = instrBuffer >> 8;
+        memory[address + j] = instr_buffer & 0xff;
+        instr_buffer = instr_buffer >> 8;
     }
 }
 
-void saveToFile(char *filename, uint8_t *memory, int lastInstr) {
+void save_to_file(char *file_name, uint8_t *memory, int last_instr) {
     FILE *file;
-    file = fopen(filename, "wb");
-    fwrite(memory, (lastInstr + 1) * 4 * sizeof(uint8_t), 1, file);
+    file = fopen(file_name, "wb");
+    fwrite(memory, (last_instr + 1) * 4 * sizeof(uint8_t), 1, file);
     fclose(file);
-}
-
-int generateBranchOffset(SymbolTable * symbolTable, char *label, int currInstr) {
-    return (((int) getAddress(symbolTable, label)) - currInstr - 8) >> 2;
-}
-
-int toMoveInstruction(uint8_t Rd, uint8_t I, uint8_t Operand, uint8_t shiftType, uint8_t shiftOperand) {
-    return  (0xe << 28) | (I << 25) | (0xd << 21) | (Rd << 12)
-            | (((shiftOperand << 7) | (shiftType << 5) | Operand) & 0xfff);
 }

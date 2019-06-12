@@ -44,7 +44,7 @@
 #define GPIO_ON_FIRST_BYTE 0x2020001C
 #define GPIO_OFF_FIRST_BYTE 0x20200028
 
-typedef struct DecodedInstruction {
+typedef struct decoded_instruction {
     uint8_t type; // Processing, Mul, Mla, Transferring, Branch
     uint8_t Rd; // For processing, multiplying and transferring
     uint8_t Rn; // For processing, multiplying and transferring
@@ -64,10 +64,10 @@ typedef struct DecodedInstruction {
     };
     union {
         uint32_t operand2; // For processing
-		uint8_t A; // For multiplying
-        uint32_t transferOffset; // For transferring
-        int32_t branchOffset; // For branch
+        uint8_t A; // For multiplying
+        uint32_t transfer_offset; // For transferring
+        int32_t branch_offset; // For branch
     };
-} DecodedInstruction;
+} Decoded_Instruction;
 
 #endif

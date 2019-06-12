@@ -1,9 +1,14 @@
-#include "utils.h"
+#ifndef DECODE_H
+#define DECODE_H
 
-void decodeProcessing(uint8_t const *instr, uint32_t const *registers, DecodedInstruction *decodedInstr);
+#include "emulate_utils.h"
 
-void decodeMultiplying(uint8_t const *instr, DecodedInstruction *decodedInstr);
+void decode_processing(uint8_t const *instr, uint32_t const *registers, Decoded_Instruction *decoded_instr);
 
-void decodeTransferring(uint8_t const *instr, uint32_t const *registers, DecodedInstruction *decodedInstr);
+void decode_multiplying(uint8_t const *instr, Decoded_Instruction *decoded_instr);
 
-void decodeBranch(uint8_t const *instr, DecodedInstruction *decodedInstr);
+void decode_transferring(uint8_t const *instr, uint32_t const *registers, Decoded_Instruction *decoded_instr);
+
+void decode_branch(uint8_t const *instr, Decoded_Instruction *decoded_instr);
+
+#endif

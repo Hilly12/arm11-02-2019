@@ -40,32 +40,32 @@ int main(int argc, char **argv) {
 
     uint8_t fetchedInstr[8]; // Cond | 4 | 4 | r1 | r2 | 4 | 4 | 4
 
-    DecodedInstruction decodedInstr;
+    Decoded_Instruction decoded_instr;
 
     // First iteration (only fetching)
     fetch(&registers[PC_REF], memory, fetchedInstr);
     registers[PC_REF] += 4;
 
     // Second iteration (decoding and fetching);
-    decode(fetchedInstr, registers, &decodedInstr);
+    decode(fetchedInstr, registers, &decoded_instr);
     fetch(&registers[PC_REF], memory, fetchedInstr);
     registers[PC_REF] += 4;
 
     // Third iteration onward (executing, decoding and fetching)
     while (1) {
         // Execute instruction
-        execute(registers, memory, gpio, gpio_on, gpio_off, &decodedInstr);
+        execute(registers, memory, gpio, gpio_on, gpio_off, &decoded_instr);
 
         // Break the loop if the last executed instruction was a HALT
-        if (decodedInstr.type == ANDEQ) {
+        if (decoded_instr.type == ANDEQ) {
             break;
         }
 
         // Decode instruction if last instruction was not a branch
-        if (decodedInstr.type == BRANCH) {
-            decodedInstr.type = INVALID;
+        if (decoded_instr.type == BRANCH) {
+            decoded_instr.type = INVALID;
         } else {
-            decode(fetchedInstr, registers, &decodedInstr);
+            decode(fetchedInstr, registers, &decoded_instr);
         }
 
         // Fetch instruction if there are more instructions to consider
