@@ -1,7 +1,6 @@
 #ifndef PIPELINE_H
 #define PIPELINE_H
 
-#include "decode.h"
 #include "execute.h"
 
 // Fetches instruction from memory at address pointed to by pc_val and stores it
