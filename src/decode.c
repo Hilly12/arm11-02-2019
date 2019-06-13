@@ -1,12 +1,12 @@
 #include "decode.h"
 
-void decode_processing(uint8_t const *instr, uint32_t const *registers, Decoded_Instruction *decoded_instr) {
+void decode_processing(byte const *instr, unsigned int const *registers, Decoded_Instruction *decoded_instr) {
     decoded_instr->type = PROCESSING;
     decoded_instr->opcode = ((instr[1] & 0x1) << 3) | (instr[2] >> 1);
     decoded_instr->S = instr[2] & 0x1;
     decoded_instr->Rn = instr[3];
     decoded_instr->Rd = instr[4];
-    uint8_t I = (instr[1] >> 1) & 0x1;
+    byte I = (instr[1] >> 1) & 0x1;
     if (I) {
         // If (I == 1) Operand2 is a rotated extended to 32-bits 8-bit constant
         decoded_instr->operand2 = (instr[6] << 4) | instr[7]; // The 8-bit constant extended to 32-bits
@@ -17,9 +17,9 @@ void decode_processing(uint8_t const *instr, uint32_t const *registers, Decoded_
     } else {
         // If (I == 0) Operand2 is a shifted register by a 5-bit constant or the last byte of a register
         decoded_instr->operand2 = registers[instr[7]]; // The register we are going to shift
-        uint8_t shift_type = (instr[6] >> 1) & 0x3;
-        uint8_t shift_by;
-        uint8_t bit4 = instr[6] & 0x1;
+        byte shift_type = (instr[6] >> 1) & 0x3;
+        byte shift_by;
+        byte bit4 = instr[6] & 0x1;
         if (bit4) {
             // If (bit4 == 1) shift by the last byte of a register
             shift_by = registers[instr[5]] & 0xff;
@@ -33,7 +33,7 @@ void decode_processing(uint8_t const *instr, uint32_t const *registers, Decoded_
     }
 }
 
-void decode_multiplying(uint8_t const *instr, Decoded_Instruction *decoded_instr) {
+void decode_multiplying(byte const *instr, Decoded_Instruction *decoded_instr) {
     decoded_instr->type = MULTIPLYING;
     decoded_instr->A = (instr[2] >> 1) & 0x1;
     decoded_instr->Rd = instr[3];
@@ -43,20 +43,20 @@ void decode_multiplying(uint8_t const *instr, Decoded_Instruction *decoded_instr
     decoded_instr->S = instr[2] & 0x1;
 }
 
-void decode_transferring(uint8_t const *instr, uint32_t const *registers, Decoded_Instruction *decoded_instr) {
+void decode_transferring(byte const *instr, unsigned int const *registers, Decoded_Instruction *decoded_instr) {
     decoded_instr->type = TRANSFER;
     decoded_instr->L = instr[2] & 0x1;
     decoded_instr->P = instr[1] & 0x1;
     decoded_instr->U = (instr[2] >> 3) & 0x1;
     decoded_instr->Rn = instr[3];
     decoded_instr->Rd = instr[4];
-    uint8_t I = (instr[1] >> 1) & 0x1;
+    byte I = (instr[1] >> 1) & 0x1;
     if (I) {
         // If (I == 1) Offset is a shifted register by a 5-bit constant or the last byte of a register
         decoded_instr->transfer_offset = registers[instr[7]];
-        uint8_t shift_type = (instr[6] >> 1) & 0x3;
-        uint8_t shift_by;
-        uint8_t bit4 = instr[6] & 0x1;
+        byte shift_type = (instr[6] >> 1) & 0x3;
+        byte shift_by;
+        byte bit4 = instr[6] & 0x1;
         if (bit4) {
             // If (bit4 == 1) shift by the last byte of a register
             shift_by = registers[instr[5]] & 0xff;
@@ -71,7 +71,7 @@ void decode_transferring(uint8_t const *instr, uint32_t const *registers, Decode
     }
 }
 
-void decode_branch(uint8_t const *instr, Decoded_Instruction *decoded_instr) {
+void decode_branch(byte const *instr, Decoded_Instruction *decoded_instr) {
     decoded_instr->type = BRANCH;
     // We take as branch_offset the last 24-bits of the instruction
     decoded_instr->branch_offset =

@@ -11,18 +11,15 @@ void add_entry(Symbol_Table *sym_table, char *label, int address) {
     Entry *e = malloc(sizeof(Entry));
     e->label = label;
     e->address = address;
-
     e->prev = sym_table->tail;
     sym_table->tail = e;
-
     sym_table->size += 1;
-
 }
 
-int get_address(Symbol_Table const *sym_table, char *label) {
+int get_address(Symbol_Table const *sym_table, char const *label) {
     Entry *current = sym_table->tail;
     while (current != NULL) {
-        if (strcmp(current->label, label) == 0) {
+        if (!strcmp(current->label, label)) {
             return current->address;
         }
         current = current->prev;

@@ -1,17 +1,17 @@
 #include "pipeline.h"
 
 // Divides the instruction into 8 entries of the instr array each containing 4 bits of the instruction
-void fetch(uint32_t const *pc_val, uint8_t const *memory, uint8_t *instr) {
-    for (int8_t i = 0; i < 4; i++) {
+void fetch(unsigned int const *pc_val, byte const *memory, byte *instr) {
+    for (byte i = 0; i < 4; i++) {
         instr[i << 1] = memory[*pc_val + 3 - i] >> 4;
         instr[(i << 1) + 1] = memory[*pc_val + 3 - i] & 0xf;
     }
 }
 
-void decode(uint8_t const *instr, uint32_t const *registers, Decoded_Instruction *decoded_instr) {
+void decode(byte const *instr, unsigned int const *registers, Decoded_Instruction *decoded_instr) {
     // Checking if the instruction is an andeq
-    uint8_t cnt = 0;
-    for (uint8_t i = 0; i < 8; i++) {
+    byte cnt = 0;
+    for (byte i = 0; i < 8; i++) {
         if (!instr[i]) {
             cnt++;
         } else {
@@ -45,8 +45,8 @@ void decode(uint8_t const *instr, uint32_t const *registers, Decoded_Instruction
     }
 }
 
-void execute(uint32_t *registers, uint8_t *memory, uint8_t *gpio, uint8_t *gpio_on,
-             uint8_t *gpio_off, Decoded_Instruction *decoded_instr) {
+void execute(unsigned int *registers, byte *memory, byte *gpio, byte *gpio_on,
+             byte *gpio_off, Decoded_Instruction *decoded_instr) {
     switch (decoded_instr->type) {
         case PROCESSING:
             execute_processing(registers, decoded_instr);
