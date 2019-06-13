@@ -7,20 +7,22 @@ byte check_overflow(unsigned int const *a, unsigned int const *b, unsigned int c
 
 // Check if Cond satisfies CPSR register [Pg. 4 spec]
 byte is_condition_satisfied(unsigned int const *cpsr, byte const *condition) {
-    byte important_bits = *cpsr >> 28;
+    byte important_bits = *cpsr >> 28; // important_bits = NZCV
     switch (*condition) {
-        case EQ: // (Z == 1)
-            return important_bits & 0x4;
-        case NE: // (Z == 0)
-            return !(important_bits & 0x4);
-        case GE: // (N == V)
-            return ((important_bits >> 3) | 0x1) == (important_bits | 0x1);
-        case LT: // (N != V)
-            return ((important_bits >> 3) | 0x1) != (important_bits | 0x1);
-        case GT: // (Z == 0) && (N == V)
-            return (!(important_bits & 0x4)) && ((important_bits >> 3) | 0x1) == (important_bits | 0x1);
-        case LE: // (Z == 1) || (N != V)
-            return (important_bits & 0x4) && ((important_bits >> 3) | 0x1) != (important_bits | 0x1);
+        case EQ:
+            return important_bits & GET_BIT_3; // (Z == 1)
+        case NE:
+            return !(important_bits & GET_BIT_3); // (Z == 0)
+        case GE:
+            return ((important_bits >> 3) & GET_BIT_1) == (important_bits & GET_BIT_1); // (N == V)
+        case LT:
+            return ((important_bits >> 3) & GET_BIT_1) != (important_bits & GET_BIT_1); // (N != V)
+        case GT:
+            return (!(important_bits & GET_BIT_3)) &&
+                   ((important_bits >> 3) & GET_BIT_1) == (important_bits & GET_BIT_1); // (Z == 0) && (N == V)
+        case LE:
+            return (important_bits & GET_BIT_3) &&
+                   ((important_bits >> 3) & GET_BIT_1) != (important_bits & GET_BIT_1); // (Z == 1) || (N != V)
         case AL:
             return 1;
         default:
@@ -32,19 +34,19 @@ void shift_with_carry(byte const *shift_by, byte const *shift_type,
                       unsigned int *shifted_value, byte *shift_carry) {
     switch (*shift_type) {
         case LSL:
-            *shift_carry = (*shifted_value >> (32 - *shift_by)) & 0x1;
+            *shift_carry = (*shifted_value >> (32 - *shift_by)) & GET_BIT_1;
             *shifted_value = *shifted_value << *shift_by;
             break;
         case LSR:
-            *shift_carry = (*shifted_value >> (*shift_by - 1)) & 0x1;
+            *shift_carry = (*shifted_value >> (*shift_by - 1)) & GET_BIT_1;
             *shifted_value = *shifted_value >> *shift_by;
             break;
         case ASR:
-            *shift_carry = (*shifted_value >> (*shift_by - 1)) & 0x1;
+            *shift_carry = (*shifted_value >> (*shift_by - 1)) & GET_BIT_1;
             *shifted_value = (unsigned int) (((int) *shifted_value) >> *shift_by);
             break;
         case ROR:
-            *shift_carry = (*shifted_value >> (*shift_by - 1)) & 0x1;
+            *shift_carry = (*shifted_value >> (*shift_by - 1)) & GET_BIT_1;
             *shifted_value = (*shifted_value >> *shift_by) | (*shifted_value << (32 - *shift_by));
             break;
         default:
@@ -74,39 +76,39 @@ void shift(byte const *shift_by, byte const *shift_type, unsigned int *shifted_v
 void processing_update_CPSR(unsigned int *cpsr, unsigned int const *result, byte const *carry) {
     if (*result) {
         if (*carry) {
-            byte bit31 = (*result >> 31) & 0x1;
+            byte bit31 = (*result >> 31) & GET_BIT_1;
             if (bit31) {
-                *cpsr = (*cpsr & 0xbfffffff) | 0xa0000000; // clears Z and sets N and C of CPSR
+                *cpsr = (*cpsr & BITMASK_CLEAR_Z) | BITMASK_SET_NC; // clears Z and sets N and C of CPSR
             } else {
-                *cpsr = (*cpsr & 0x3fffffff) | 0x20000000; // clears N and Z and sets C of CPSR
+                *cpsr = (*cpsr & BITMASK_CLEAR_NZ) | BITMASK_SET_C; // clears N and Z and sets C of CPSR
             }
         } else {
-            byte bit31 = (*result >> 31) & 0x1;
+            byte bit31 = (*result >> 31) & GET_BIT_1;
             if (bit31) {
-                *cpsr = (*cpsr & 0x9fffffff) | 0x80000000; // clears Z and C and sets N of CPSR
+                *cpsr = (*cpsr & BITMASK_CLEAR_ZC) | BITMASK_SET_N; // clears Z and C and sets N of CPSR
             } else {
-                *cpsr &= 0x9fffffff; // clears N, Z and C of CPSR
+                *cpsr &= BITMASK_CLEAR_NZC; // clears N, Z and C of CPSR
             }
         }
     } else {
         if (*carry) {
-            *cpsr = (*cpsr & 0x7fffffff) | 0x60000000; // clears N and sets Z and C of CPSR
+            *cpsr = (*cpsr & BITMASK_CLEAR_N) | BITMASK_SET_ZC; // clears N and sets Z and C of CPSR
         } else {
-            *cpsr = (*cpsr & 0x5fffffff) | 0x40000000; // clears N and C and sets Z of CPSR
+            *cpsr = (*cpsr & BITMASK_CLEAR_NC) | BITMASK_SET_Z; // clears N and C and sets Z of CPSR
         }
     }
 }
 
 void multiplying_update_CPSR(unsigned int *cpsr, unsigned int const *result) {
     if (result) {
-        byte bit31 = (*result >> 31) & 0x1;
+        byte bit31 = (*result >> 31) & GET_BIT_1;
         if (bit31) {
-            *cpsr = (*cpsr & 0x8fffffff) | 0x80000000; // clears Z and sets N of CPSR
+            *cpsr = (*cpsr & BITMASK_CLEAR_Z) | BITMASK_SET_N; // clears Z and sets N of CPSR
         } else {
-            *cpsr &= 0x3fffffff; // clears N and Z of CPSR
+            *cpsr &= BITMASK_CLEAR_NZ; // clears N and Z of CPSR
         }
     } else {
-        *cpsr = (*cpsr & 0x7fffffff) | 0x40000000; // clears N and sets Z of CPSR
+        *cpsr = (*cpsr & BITMASK_CLEAR_N) | BITMASK_SET_Z; // clears N and sets Z of CPSR
     }
 }
 
@@ -128,10 +130,10 @@ void load(unsigned int const *address, byte const *memory, unsigned int *Rd_regi
 }
 
 void store(unsigned int const *address, byte *memory, unsigned int const *Rd_register) {
-    memory[*address] = *Rd_register & 0xff;
-    memory[*address + 1] = (*Rd_register >> 8) & 0xff;
-    memory[*address + 2] = (*Rd_register >> 16) & 0xff;
-    memory[*address + 3] = (*Rd_register >> 24) & 0xff;
+    memory[*address] = *Rd_register & GET_FIRST_8_BITS;
+    memory[*address + 1] = (*Rd_register >> 8) & GET_FIRST_8_BITS;
+    memory[*address + 2] = (*Rd_register >> 16) & GET_FIRST_8_BITS;
+    memory[*address + 3] = (*Rd_register >> 24) & GET_FIRST_8_BITS;
 }
 
 void output(unsigned int const *registers, byte const *memory) {

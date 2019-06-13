@@ -7,7 +7,7 @@ Symbol_Table *create_table(void) {
     return sym_table;
 }
 
-void add_entry(Symbol_Table *sym_table, char *label, int address) {
+void add_entry(Symbol_Table *sym_table, char *label, unsigned int address) {
     Entry *e = malloc(sizeof(Entry));
     e->label = label;
     e->address = address;
@@ -29,62 +29,62 @@ int get_address(Symbol_Table const *sym_table, char const *label) {
 
 Symbol_Table *create_opcode_table(void) {
     Symbol_Table *opcode_table = create_table();
-    add_entry(opcode_table, "and", 0x0);
-    add_entry(opcode_table, "eor", 0x1);
-    add_entry(opcode_table, "sub", 0x2);
-    add_entry(opcode_table, "rsb", 0x3);
-    add_entry(opcode_table, "add", 0x4);
-    add_entry(opcode_table, "tst", 0x8);
-    add_entry(opcode_table, "teq", 0x9);
-    add_entry(opcode_table, "cmp", 0xa);
-    add_entry(opcode_table, "orr", 0xc);
-    add_entry(opcode_table, "mov", 0xd);
+    add_entry(opcode_table, "and", AND);
+    add_entry(opcode_table, "eor", EOR);
+    add_entry(opcode_table, "sub", SUB);
+    add_entry(opcode_table, "rsb", RSB);
+    add_entry(opcode_table, "add", ADD);
+    add_entry(opcode_table, "tst", TST);
+    add_entry(opcode_table, "teq", TEQ);
+    add_entry(opcode_table, "cmp", CMP);
+    add_entry(opcode_table, "orr", ORR);
+    add_entry(opcode_table, "mov", MOV);
 
-    add_entry(opcode_table, "lsl", 0x0);
-    add_entry(opcode_table, "lsr", 0x1);
-    add_entry(opcode_table, "asr", 0x2);
-    add_entry(opcode_table, "ror", 0x3);
+    add_entry(opcode_table, "lsl", LSL);
+    add_entry(opcode_table, "lsr", LSR);
+    add_entry(opcode_table, "asr", ASR);
+    add_entry(opcode_table, "ror", ROR);
 
-    add_entry(opcode_table, "beq", 0x0);
-    add_entry(opcode_table, "bne", 0x1);
-    add_entry(opcode_table, "bge", 0xa);
-    add_entry(opcode_table, "blt", 0xb);
-    add_entry(opcode_table, "bgt", 0xc);
-    add_entry(opcode_table, "ble", 0xd);
-    add_entry(opcode_table, "b", 0xe);
+    add_entry(opcode_table, "beq", BEQ);
+    add_entry(opcode_table, "bne", BNE);
+    add_entry(opcode_table, "bge", BGE);
+    add_entry(opcode_table, "blt", BLT);
+    add_entry(opcode_table, "bgt", BGT);
+    add_entry(opcode_table, "ble", BLE);
+    add_entry(opcode_table, "b", B);
 
     return opcode_table;
 }
 
 Symbol_Table *create_parsetype_table(void) {
     Symbol_Table *parsetype_table = create_table();
-    add_entry(parsetype_table, "and", 0);
-    add_entry(parsetype_table, "eor", 0);
-    add_entry(parsetype_table, "sub", 0);
-    add_entry(parsetype_table, "rsb", 0);
-    add_entry(parsetype_table, "add", 0);
-    add_entry(parsetype_table, "tst", 0);
-    add_entry(parsetype_table, "teq", 0);
-    add_entry(parsetype_table, "cmp", 0);
-    add_entry(parsetype_table, "orr", 0);
-    add_entry(parsetype_table, "mov", 0);
+    add_entry(parsetype_table, "and", PARSETYPE_0);
+    add_entry(parsetype_table, "eor", PARSETYPE_0);
+    add_entry(parsetype_table, "sub", PARSETYPE_0);
+    add_entry(parsetype_table, "rsb", PARSETYPE_0);
+    add_entry(parsetype_table, "add", PARSETYPE_0);
+    add_entry(parsetype_table, "tst", PARSETYPE_0);
+    add_entry(parsetype_table, "teq", PARSETYPE_0);
+    add_entry(parsetype_table, "cmp", PARSETYPE_0);
+    add_entry(parsetype_table, "orr", PARSETYPE_0);
+    add_entry(parsetype_table, "mov", PARSETYPE_0);
 
-    add_entry(parsetype_table, "mul", 1);
-    add_entry(parsetype_table, "mla", 1);
+    add_entry(parsetype_table, "mul", PARSETYPE_1);
+    add_entry(parsetype_table, "mla", PARSETYPE_1);
 
-    add_entry(parsetype_table, "ldr", 2);
-    add_entry(parsetype_table, "str", 2);
+    add_entry(parsetype_table, "ldr", PARSETYPE_2);
+    add_entry(parsetype_table, "str", PARSETYPE_2);
 
-    add_entry(parsetype_table, "beq", 3);
-    add_entry(parsetype_table, "bne", 3);
-    add_entry(parsetype_table, "bge", 3);
-    add_entry(parsetype_table, "blt", 3);
-    add_entry(parsetype_table, "bgt", 3);
-    add_entry(parsetype_table, "ble", 3);
-    add_entry(parsetype_table, "b", 3);
+    add_entry(parsetype_table, "beq", PARSETYPE_3);
+    add_entry(parsetype_table, "bne", PARSETYPE_3);
+    add_entry(parsetype_table, "bge", PARSETYPE_3);
+    add_entry(parsetype_table, "blt", PARSETYPE_3);
+    add_entry(parsetype_table, "bgt", PARSETYPE_3);
+    add_entry(parsetype_table, "ble", PARSETYPE_3);
+    add_entry(parsetype_table, "b", PARSETYPE_3);
 
-    add_entry(parsetype_table, "lsl", 4);
-    add_entry(parsetype_table, "andeq", 4);
+    add_entry(parsetype_table, "lsl", PARSETYPE_4);
+    add_entry(parsetype_table, "andeq", PARSETYPE_4);
 
     return parsetype_table;
 }

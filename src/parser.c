@@ -20,12 +20,12 @@ unsigned int parse_data_processing(char *save, Parser_Data *data) {
     byte cond, opcode, Rn, Rd, I, S;
     unsigned int operand;
 
-    cond = 0xe;
-    opcode = get_address(data->opcode_table, data->mnemonic) & 0xf;
+    cond = AL;
+    opcode = get_address(data->opcode_table, data->mnemonic) & GET_FIRST_4_BITS;
 
     char *token;
 
-    if (0x8 <= opcode && opcode <= 0xa) { // tst, teq, cmp
+    if (TST <= opcode && opcode <= CMP) { // tst, teq, cmp
         Rd = 0;
         S = 1;
     } else {
@@ -34,7 +34,7 @@ unsigned int parse_data_processing(char *save, Parser_Data *data) {
         S = 0;
     }
 
-    if (opcode == 0xd) { // mov
+    if (opcode == MOV) { // mov
         Rn = 0;
     } else {
         token = strtok_r(NULL, ", ", &save);
@@ -57,7 +57,7 @@ unsigned int parse_data_processing(char *save, Parser_Data *data) {
                     break;
                 }
             }
-            operand = (rotate << 8) | (operand & 0xff);
+            operand = (rotate << 8) | (operand & GET_FIRST_8_BITS);
         }
     } else {
         // Check for shift input
@@ -67,15 +67,15 @@ unsigned int parse_data_processing(char *save, Parser_Data *data) {
             unsigned int shift_operand;
             int imm = 0;
 
-            shift_type = get_address(data->opcode_table, token) & 0xf;
+            shift_type = get_address(data->opcode_table, token) & GET_FIRST_4_BITS;
             token = strtok_r(NULL, " \n", &save);
             imm = (token[0] == '#');
             shift_operand = parse_expression(token);
 
             if (imm) {
-                operand = ((shift_operand << 7) | (shift_type << 5) | operand) & 0xfff;
+                operand = ((shift_operand << 7) | (shift_type << 5) | operand) & GET_FIRST_12_BITS;
             } else {
-                operand = ((shift_operand << 8) | (shift_type << 5) | (1 << 4) | operand) & 0xfff;
+                operand = ((shift_operand << 8) | (shift_type << 5) | (1 << 4) | operand) & GET_FIRST_12_BITS;
             }
         }
     }
@@ -87,7 +87,7 @@ unsigned int parse_data_processing(char *save, Parser_Data *data) {
 unsigned int parse_multiply(char *save, Parser_Data *data) {
     byte cond, A, S, Rd, Rn, Rs, Rm;
 
-    cond = 0xe;
+    cond = AL;
     S = 0;
 
     char *token;
@@ -117,7 +117,7 @@ unsigned int parse_data_transfer(char *save, Parser_Data *data) {
     byte cond, I, P, U, L, Rn, Rd;
     unsigned short offset;
 
-    cond = 0xe;
+    cond = AL;
     L = (data->mnemonic[0] == 'l');
 
     char *token;
@@ -129,13 +129,13 @@ unsigned int parse_data_transfer(char *save, Parser_Data *data) {
     U = 1;
     if (token[0] == '=' && L) {
         unsigned int expression = parse_expression(token);
-        if (expression > 0xff) {
+        if (expression > GET_FIRST_8_BITS) {
             data->last_instr = data->last_instr + 1;
             int address = data->last_instr * 4;
             write_4byte_to_memory(data->memory, &expression, &address);
             P = 1;
             I = 0;
-            Rn = 0xf; // PC
+            Rn = GET_FIRST_4_BITS; // PC
             offset = (data->last_instr - data->curr_instr) * 4 - 8;
         } else {
             return to_move_instruction(Rd, 1, expression, 0, 0);
@@ -149,7 +149,7 @@ unsigned int parse_data_transfer(char *save, Parser_Data *data) {
         if (token != NULL) {
             I = (token[0] != '#');
             int expression = parse_expression(token);
-            offset = abs(expression) & 0xffff;
+            offset = abs(expression) & GET_FIRST_16_BITS;
             if (expression < 0) {
                 U = 0;
             }
@@ -160,15 +160,15 @@ unsigned int parse_data_transfer(char *save, Parser_Data *data) {
                 unsigned int shift_operand;
                 int imm;
 
-                shift_type = get_address(data->opcode_table, token) & 0xf;
+                shift_type = get_address(data->opcode_table, token) & GET_FIRST_4_BITS;
                 token = strtok_r(NULL, " ,]\n", &save);
                 imm = (token[0] == '#');
                 shift_operand = parse_expression(token);
                 if (imm) {
 
-                    offset = ((shift_operand << 7) | (shift_type << 5) | offset) & 0xfff;
+                    offset = ((shift_operand << 7) | (shift_type << 5) | offset) & GET_FIRST_12_BITS;
                 } else {
-                    offset = ((shift_operand << 8) | (shift_type << 5) | (1 << 4) | offset) & 0xfff;
+                    offset = ((shift_operand << 8) | (shift_type << 5) | (1 << 4) | offset) & GET_FIRST_12_BITS;
                 }
             }
         }
@@ -184,12 +184,12 @@ unsigned int parse_branch(char *save, Parser_Data *data) {
     byte cond;
     int offset;
 
-    cond = get_address(data->opcode_table, data->mnemonic) & 0xf;
+    cond = get_address(data->opcode_table, data->mnemonic) & GET_FIRST_4_BITS;
     token = strtok_r(NULL, " \n", &save);
     int instr = data->curr_instr * 4;
     offset = (get_address(data->label_table, token) - instr - 8) >> 2;
 
-    return (cond << 28) | (0xa << 24) | (offset & 0xffffff);
+    return (cond << 28) | (0xa << 24) | (offset & GET_FIRST_24_BITS);
 }
 
 unsigned int parse_special(char *save, Parser_Data *data) {

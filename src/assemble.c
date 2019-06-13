@@ -52,8 +52,9 @@ int main(int argc, char **argv) {
             char *save;
             data->pre_indexed = (strstr(line, "],") == NULL);
             data->mnemonic = strtok_r(line, " ", &save);
-            unsigned int processed_instr = parsers[get_address(data->parsetype_table, data->mnemonic)](save, data);
-            int address = instruction_count * 4;
+            int address = get_address(data->parsetype_table, data->mnemonic);
+            unsigned int processed_instr = parsers[address](save, data);
+            address = instruction_count * 4;
             write_4byte_to_memory(data->memory, &processed_instr, &address);
             instruction_count++;
         }

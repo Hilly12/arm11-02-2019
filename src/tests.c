@@ -53,19 +53,19 @@ void run_symbol_table_tests(void) {
     Symbol_Table *st = create_table();
     printf("Table created\n");
 
-    add_entry(st, "and", 0x0);
+    add_entry(st, "and", AND);
     printf("Entry 1 added\n");
 
-    add_entry(st, "eor", 0x1);
+    add_entry(st, "eor", EOR);
     printf("Entry 2 added\n");
 
-    add_entry(st, "sub", 0x2);
+    add_entry(st, "sub", SUB);
     printf("Entry 3 added\n");
 
-    add_entry(st, "rsb", 0x3);
+    add_entry(st, "rsb", RSB);
     printf("Entry 4 added\n");
 
-    add_entry(st, "add", 0x4);
+    add_entry(st, "add", ADD);
     printf("Entry 5 added\n");
 
     printf("Multiple entries added\n");

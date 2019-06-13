@@ -4,7 +4,7 @@
 void fetch(unsigned int const *pc_val, byte const *memory, byte *instr) {
     for (byte i = 0; i < 4; i++) {
         instr[i << 1] = memory[*pc_val + 3 - i] >> 4;
-        instr[(i << 1) + 1] = memory[*pc_val + 3 - i] & 0xf;
+        instr[(i << 1) + 1] = memory[*pc_val + 3 - i] & GET_FIRST_4_BITS;
     }
 }
 
