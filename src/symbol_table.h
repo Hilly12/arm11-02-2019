@@ -1,20 +1,21 @@
 #ifndef SYMBOLTABLE_H
 #define SYMBOLTABLE_H
 
-#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "definitions.h"
+
 typedef struct entry {
     char *label;
-    uint32_t address;
+    unsigned int address;
     struct entry *prev;
 } Entry;
 
 typedef struct symbol_table {
     Entry *tail;
-    uint32_t size;
+    unsigned int size;
 } Symbol_Table;
 
 // Allocates memory for a new symbol table
@@ -24,7 +25,7 @@ Symbol_Table *create_table(void);
 void add_entry(Symbol_Table *sym_table, char *label, int address);
 
 // Searches symbol table for label and returns corresponding address
-int get_address(Symbol_Table const *sym_table, char *label);
+int get_address(Symbol_Table const *sym_table, char const *label);
 
 // Creates symbol table mapping string (instruction mnemonic)
 // to corresponding opcode

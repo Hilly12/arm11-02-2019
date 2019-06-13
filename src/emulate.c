@@ -7,38 +7,38 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    uint32_t registers[REGISTERS];
+    unsigned int registers[REGISTERS];
 
-    uint8_t memory[MEMORY_SIZE];
+    byte memory[MEMORY_SIZE];
 
     // State of ARM machine when turned on [Pg. 3 Spec]
-    for (uint8_t i = 0; i < REGISTERS; i++) {
+    for (byte i = 0; i < REGISTERS; i++) {
         registers[i] = 0;
     }
-    for (uint32_t i = 0; i < MEMORY_SIZE; i++) {
+    for (unsigned int i = 0; i < MEMORY_SIZE; i++) {
         memory[i] = 0;
     }
 
     // Stores the GPIO addresses
-    uint8_t gpio[GPIOBYTES];
-    for (int i = 0; i < GPIOBYTES; i++) {
+    byte gpio[GPIOBYTES];
+    for (byte i = 0; i < GPIOBYTES; i++) {
         gpio[i] = 0;
     }
 
     // Stores the addresses that turn the GPIO on and off
-    uint8_t gpio_on[GPIO_ON_OFF_BYTES];
-    uint8_t gpio_off[GPIO_ON_OFF_BYTES];
-    for (int i = 0; i < GPIO_ON_OFF_BYTES; i++) {
+    byte gpio_on[GPIO_ON_OFF_BYTES];
+    byte gpio_off[GPIO_ON_OFF_BYTES];
+    for (byte i = 0; i < GPIO_ON_OFF_BYTES; i++) {
         gpio_on[i] = 0;
         gpio_off[i] = 0;
     }
 
     // LOAD BINARY FILE INTO MEMORY
     FILE *binary = fopen(argv[1], "r");
-    fread(memory, sizeof(uint8_t), MEMORY_SIZE, binary);
+    fread(memory, sizeof(byte), MEMORY_SIZE, binary);
     fclose(binary);
 
-    uint8_t fetchedInstr[8]; // Cond | 4 | 4 | r1 | r2 | 4 | 4 | 4
+    byte fetchedInstr[8]; // Cond | 4 | 4 | r1 | r2 | 4 | 4 | 4
 
     Decoded_Instruction decoded_instr;
 
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
             registers[PC_REF] += 4;
         } else {
             // Otherwise fetch an ANDEQ instruction
-            for (uint8_t i = 0; i < 8; i++) {
+            for (byte i = 0; i < 8; i++) {
                 fetchedInstr[i] = 0;
             }
         }

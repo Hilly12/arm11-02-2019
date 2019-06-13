@@ -1,6 +1,6 @@
 #include "execute.h"
 
-void execute_processing(uint32_t *registers, Decoded_Instruction *decoded_instr) {
+void execute_processing(unsigned int *registers, Decoded_Instruction *decoded_instr) {
     switch (decoded_instr->opcode) {
         case AND:
             registers[decoded_instr->Rd] =
@@ -104,7 +104,7 @@ void execute_processing(uint32_t *registers, Decoded_Instruction *decoded_instr)
     }
 }
 
-void execute_multiplying(uint32_t *registers, Decoded_Instruction const *decoded_instr) {
+void execute_multiplying(unsigned int *registers, Decoded_Instruction const *decoded_instr) {
     if (decoded_instr->A) {
         registers[decoded_instr->Rd] =
                 registers[decoded_instr->Rm] * registers[decoded_instr->Rs] +
@@ -117,12 +117,12 @@ void execute_multiplying(uint32_t *registers, Decoded_Instruction const *decoded
     }
 }
 
-void execute_transferring(uint32_t *registers, uint8_t *memory, uint8_t *gpio, uint8_t *gpio_on,
-                          uint8_t *gpio_off, Decoded_Instruction *decoded_instr) {
+void execute_transferring(unsigned int *registers, byte *memory, byte *gpio, byte *gpio_on,
+                          byte *gpio_off, Decoded_Instruction *decoded_instr) {
     if (!(decoded_instr->U)) {
         decoded_instr->transfer_offset = ~decoded_instr->transfer_offset + 1;
     }
-    uint32_t address = registers[decoded_instr->Rn];
+    unsigned int address = registers[decoded_instr->Rn];
     if (decoded_instr->P) {
         address += decoded_instr->transfer_offset;
     } else {
@@ -179,7 +179,7 @@ void execute_transferring(uint32_t *registers, uint8_t *memory, uint8_t *gpio, u
     }
 }
 
-void execute_branch(uint32_t *pc_register, Decoded_Instruction const *decoded_instr) {
+void execute_branch(unsigned int *pc_register, Decoded_Instruction const *decoded_instr) {
     // We shift left by 8 and then arithmetically right by 6 which is equivalent to shifting 2 to
     // the left and then sign extending
     *pc_register += (decoded_instr->branch_offset << 8) >> 6;

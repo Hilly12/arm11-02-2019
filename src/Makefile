@@ -1,7 +1,7 @@
 CC      = gcc
 CFLAGS  = -Wall -Wextra -Werror -g -D_DEFAULT_SOURCE -std=c11 -pedantic
-DEPS    = pipeline.h decode.h execute.h emulate_utils.h emulate_definitions.h
-DEPSAS  = symbol_table.h parser.h assemble_utils.h
+DEPS    = pipeline.h decode.h execute.h emulate_utils.h definitions.h
+DEPSAS  = symbol_table.h parser.h assemble_utils.h definitions.h
 OBJ     = emulate.o pipeline.o decode.o execute.o emulate_utils.o
 OBJAS   = assemble.o symbol_table.o parser.o assemble_utils.o
 LIBS    = -lm
