@@ -16,12 +16,12 @@ int parse_expression(char *token) {
     }
 }
 
-unsigned int parse_data_processing(char *save, Parser_Data *dat) {
+unsigned int parse_data_processing(char *save, Parser_Data *data) {
     byte cond, opcode, Rn, Rd, I, S;
     unsigned int operand;
 
     cond = 0xe;
-    opcode = get_address(dat->opcode_table, dat->mnemonic) & 0xf;
+    opcode = get_address(data->opcode_table, data->mnemonic) & 0xf;
 
     char *token;
 
@@ -67,7 +67,7 @@ unsigned int parse_data_processing(char *save, Parser_Data *dat) {
             unsigned int shift_operand;
             int imm = 0;
 
-            shift_type = get_address(dat->opcode_table, token) & 0xf;
+            shift_type = get_address(data->opcode_table, token) & 0xf;
             token = strtok_r(NULL, " \n", &save);
             imm = (token[0] == '#');
             shift_operand = parse_expression(token);
@@ -84,7 +84,7 @@ unsigned int parse_data_processing(char *save, Parser_Data *dat) {
            | (S << 20) | (Rn << 16) | (Rd << 12) | operand;
 }
 
-unsigned int parse_multiply(char *save, Parser_Data *dat) {
+unsigned int parse_multiply(char *save, Parser_Data *data) {
     byte cond, A, S, Rd, Rn, Rs, Rm;
 
     cond = 0xe;
@@ -100,7 +100,7 @@ unsigned int parse_multiply(char *save, Parser_Data *dat) {
     Rs = parse_register(token);
 
     // mla
-    if (!strcmp(dat->mnemonic, "mla")) {
+    if (!strcmp(data->mnemonic, "mla")) {
         token = strtok_r(NULL, " \n", &save);
         Rn = parse_register(token);
         A = 1;
@@ -113,12 +113,12 @@ unsigned int parse_multiply(char *save, Parser_Data *dat) {
            | (Rn << 12) | (Rs << 8) | (0x9 << 4) | Rm;
 }
 
-unsigned int parse_data_transfer(char *save, Parser_Data *dat) {
+unsigned int parse_data_transfer(char *save, Parser_Data *data) {
     byte cond, I, P, U, L, Rn, Rd;
     unsigned short offset;
 
     cond = 0xe;
-    L = (dat->mnemonic[0] == 'l');
+    L = (data->mnemonic[0] == 'l');
 
     char *token;
 
@@ -130,19 +130,19 @@ unsigned int parse_data_transfer(char *save, Parser_Data *dat) {
     if (token[0] == '=' && L) {
         unsigned int expression = parse_expression(token);
         if (expression > 0xff) {
-            dat->last_instr = dat->last_instr + 1;
-            int address = dat->last_instr * 4;
-            write_4byte_to_memory(dat->memory, &expression, &address);
+            data->last_instr = data->last_instr + 1;
+            int address = data->last_instr * 4;
+            write_4byte_to_memory(data->memory, &expression, &address);
             P = 1;
             I = 0;
             Rn = 0xf; // PC
-            offset = (dat->last_instr - dat->cuur_instr) * 4 - 8;
+            offset = (data->last_instr - data->curr_instr) * 4 - 8;
         } else {
             return to_move_instruction(Rd, 1, expression, 0, 0);
         }
     } else {
         I = 0;
-        P = dat->pre_indexed;
+        P = data->pre_indexed;
         Rn = parse_register(token);
         token = strtok_r(NULL, " ,]\n", &save);
         offset = 0;
@@ -160,7 +160,7 @@ unsigned int parse_data_transfer(char *save, Parser_Data *dat) {
                 unsigned int shift_operand;
                 int imm;
 
-                shift_type = get_address(dat->opcode_table, token) & 0xf;
+                shift_type = get_address(data->opcode_table, token) & 0xf;
                 token = strtok_r(NULL, " ,]\n", &save);
                 imm = (token[0] == '#');
                 shift_operand = parse_expression(token);
@@ -179,22 +179,22 @@ unsigned int parse_data_transfer(char *save, Parser_Data *dat) {
            | offset;
 }
 
-unsigned int parse_branch(char *save, Parser_Data *dat) {
+unsigned int parse_branch(char *save, Parser_Data *data) {
     char *token;
     byte cond;
     int offset;
 
-    cond = get_address(dat->opcode_table, dat->mnemonic) & 0xf;
+    cond = get_address(data->opcode_table, data->mnemonic) & 0xf;
     token = strtok_r(NULL, " \n", &save);
-    int instr = dat->cuur_instr * 4;
-    offset = (get_address(dat->label_table, token) - instr - 8) >> 2;
+    int instr = data->curr_instr * 4;
+    offset = (get_address(data->label_table, token) - instr - 8) >> 2;
 
     return (cond << 28) | (0xa << 24) | (offset & 0xffffff);
 }
 
-unsigned int parse_special(char *save, Parser_Data *dat) {
+unsigned int parse_special(char *save, Parser_Data *data) {
     // andeq
-    if (!strcmp(dat->mnemonic, "andeq")) {
+    if (!strcmp(data->mnemonic, "andeq")) {
         return 0;
     }
 
