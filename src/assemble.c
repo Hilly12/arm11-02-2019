@@ -49,17 +49,20 @@ int main(int argc, char **argv) {
             parse_special
     };
 
+    char *save; // Save pointer to tokenizer
+    int parse_type; // Stores index to type of parse function depending on mnemonic
+    unsigned int processed_instr; // Stores processed instruction
+
     // Generate binary encoding for each line (Pass 2)
     while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {
         if (strstr(line, ":") == NULL && strcmp(line, "\n")) {
             data->curr_instr = instruction_count;
-            char *save;
-            data->pre_indexed = (strstr(line, "],") == NULL);
+            // Pre-index only relevant for data transfer
+            data->pre_indexed = (strstr(line, "],") == NULL); // Pre-indexed if ']' followed by ','
             data->mnemonic = strtok_r(line, " ", &save);
-            int address = get_address(data->parsetype_table, data->mnemonic);
-            unsigned int processed_instr = parsers[address](save, data);
-            address = instruction_count * 4;
-            write_4byte_to_memory(data->memory, &processed_instr, &address);
+            parse_type = get_address(data->parsetype_table, data->mnemonic);
+            processed_instr = parsers[parse_type](save, data);
+            write_4byte_to_memory(data->memory, &processed_instr, instruction_count * 4);
             instruction_count++;
         }
     }

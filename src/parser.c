@@ -128,7 +128,7 @@ unsigned int parse_data_transfer(char *save, Parser_Data *data) {
         if (expression > 0xff) {
             data->last_instr = data->last_instr + 1;
             int address = data->last_instr * 4;
-            write_4byte_to_memory(data->memory, &expression, &address);
+            write_4byte_to_memory(data->memory, &expression, address);
             P = 1;
             I = 0;
             Rn = PC_REF; // PC
