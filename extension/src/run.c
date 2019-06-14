@@ -2,53 +2,52 @@
 #include "timer.h"
 #include "graphics.h"
 #include "resources.h"
+#include "map_generator.h"
 
-#define RPI_SYSTIMER_BASE 0x20003000
+int player_x;
+int player_y;
+int z = -1;
+char **map[MAP_WIDTH][MAP_HEIGHT];
 
-typedef struct {
-    volatile unsigned int control_status;
-    volatile unsigned int counter_lo;
-    volatile unsigned int counter_hi;
-    volatile unsigned int compare0;
-    volatile unsigned int compare1;
-    volatile unsigned int compare2;
-    volatile unsigned int compare3;
-} rpi_sys_timer_t;
+void start() {
+    player_x = 0;
+    player_y = 0;
+    generate_map((char **) map, 5, &player_x, &player_y);
+}
 
-static rpi_sys_timer_t* rpiSystemTimer = (rpi_sys_timer_t*) RPI_SYSTIMER_BASE;
+void update() {
+    // map[player_x - 1][player_y - 1] = (map[player_x - 1][player_y - 1]) + z;
+    // z = -z;
+}
 
-void wait_microseconds(unsigned int us) {
-    volatile unsigned int start_time = rpiSystemTimer->counter_lo;
-    while((rpiSystemTimer->counter_lo - start_time) < us);
+void draw() {
+    fb_clear(0, SIZE);
+    for (int x = 0; x < VISIBLE_WIDTH; x++) {
+        for (int y = 0; y < VISIBLE_HEIGHT; y++) {
+            int rx = x + player_x - HCENT;
+            int ry = y + player_y - VCENT;
+            if (is_valid(x, y)) {
+                draw_rectangle(x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE, WHITE);
+                draw_char(x * SQUARE_SIZE, y * SQUARE_SIZE, 'a', RED);
+            } else {
+                draw_rectangle(x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE, GREY);
+            }
+        }
+    }
+
+    draw_rectangle(HCENT * SQUARE_SIZE, VCENT * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE, RED);
 }
 
 void main(void) {
     fb_init(WIDTH, HEIGHT, DEPTH, FB_SINGLEBUFFER);
-    
-    // for(int y = 0; y < HEIGHT; y += 16) { 
-    //     draw_hline(y, RED);
-    // }
-    // for(int x = 0; x < WIDTH; x += 16) {
-    //     draw_vline(x, YELLOW);
-    // }
 
-    int x = 100;
+    start();
 
-    char str[] = "hello world";
-    
-    draw_rectangle(0, 0, SQUARE_SIZE, SQUARE_SIZE, MAGENTA);
-
-    draw_string(100, 100, str, CYAN);
-
-    draw_image(get_player0(), 300, 100, 32, 32);
-
-    // while (x + 100 < WIDTH) {
-    //     fb_clear(0, SIZE);
-    //     draw_rectangle(x, 50, 100, 100, WHITE);
-    //     timer_sleep(2000000);
-    //     // wait_microseconds(1000000);
-    //     x++;
-    // }
+    while (1) {
+        update();
+        draw();
+        timer_sleep(1000000);
+    }
 
     while(1);
 }
