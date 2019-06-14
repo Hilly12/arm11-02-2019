@@ -9,7 +9,7 @@ typedef struct Parser_Data {
     char *mnemonic;
     unsigned int curr_instr;
     unsigned int last_instr;
-    Symbol_Table *opcode_table;
+    Symbol_Table *mnemonic_table;
     Symbol_Table *label_table;
     Symbol_Table *parsetype_table;
     byte *memory;

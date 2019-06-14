@@ -4,7 +4,7 @@
 #include "emulate_utils.h"
 
 typedef struct decoded_instruction {
-    byte type; // Processing, Mul, Mla, Transferring, Branch
+    byte type; // Processing, Multiplying, Transferring, Branch
     byte Rd; // For processing, multiplying and transferring
     byte Rn; // For processing, multiplying and transferring
     union {

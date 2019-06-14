@@ -27,37 +27,39 @@ int get_address(Symbol_Table const *sym_table, char const *label) {
     return 1;
 }
 
-Symbol_Table *create_opcode_table(void) {
-    Symbol_Table *opcode_table = create_table();
-    add_entry(opcode_table, "and", AND);
-    add_entry(opcode_table, "eor", EOR);
-    add_entry(opcode_table, "sub", SUB);
-    add_entry(opcode_table, "rsb", RSB);
-    add_entry(opcode_table, "add", ADD);
-    add_entry(opcode_table, "tst", TST);
-    add_entry(opcode_table, "teq", TEQ);
-    add_entry(opcode_table, "cmp", CMP);
-    add_entry(opcode_table, "orr", ORR);
-    add_entry(opcode_table, "mov", MOV);
+Symbol_Table *create_mnemonic_table(void) {
+    Symbol_Table *mnemonic_table = create_table();
 
-    add_entry(opcode_table, "lsl", LSL);
-    add_entry(opcode_table, "lsr", LSR);
-    add_entry(opcode_table, "asr", ASR);
-    add_entry(opcode_table, "ror", ROR);
+    add_entry(mnemonic_table, "and", AND);
+    add_entry(mnemonic_table, "eor", EOR);
+    add_entry(mnemonic_table, "sub", SUB);
+    add_entry(mnemonic_table, "rsb", RSB);
+    add_entry(mnemonic_table, "add", ADD);
+    add_entry(mnemonic_table, "tst", TST);
+    add_entry(mnemonic_table, "teq", TEQ);
+    add_entry(mnemonic_table, "cmp", CMP);
+    add_entry(mnemonic_table, "orr", ORR);
+    add_entry(mnemonic_table, "mov", MOV);
 
-    add_entry(opcode_table, "beq", BEQ);
-    add_entry(opcode_table, "bne", BNE);
-    add_entry(opcode_table, "bge", BGE);
-    add_entry(opcode_table, "blt", BLT);
-    add_entry(opcode_table, "bgt", BGT);
-    add_entry(opcode_table, "ble", BLE);
-    add_entry(opcode_table, "b", B);
+    add_entry(mnemonic_table, "lsl", LSL);
+    add_entry(mnemonic_table, "lsr", LSR);
+    add_entry(mnemonic_table, "asr", ASR);
+    add_entry(mnemonic_table, "ror", ROR);
 
-    return opcode_table;
+    add_entry(mnemonic_table, "beq", BEQ);
+    add_entry(mnemonic_table, "bne", BNE);
+    add_entry(mnemonic_table, "bge", BGE);
+    add_entry(mnemonic_table, "blt", BLT);
+    add_entry(mnemonic_table, "bgt", BGT);
+    add_entry(mnemonic_table, "ble", BLE);
+    add_entry(mnemonic_table, "b", B);
+
+    return mnemonic_table;
 }
 
 Symbol_Table *create_parsetype_table(void) {
     Symbol_Table *parsetype_table = create_table();
+
     add_entry(parsetype_table, "and", PARSETYPE_0);
     add_entry(parsetype_table, "eor", PARSETYPE_0);
     add_entry(parsetype_table, "sub", PARSETYPE_0);

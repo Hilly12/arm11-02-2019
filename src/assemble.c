@@ -5,31 +5,26 @@
 #define MAX_LINE_LENGTH 511
 #define MEMORY_SIZE 65536
 
-unsigned int (*parsers[])(char *, Parser_Data *) = {
-        parse_data_processing,
-        parse_multiply,
-        parse_data_transfer,
-        parse_branch,
-        parse_special
-};
-
 int main(int argc, char **argv) {
     if (argc != 3) {
         perror("Wrong number of arguments");
         return 1;
     }
 
+    // Loading the file
     FILE *file;
     file = fopen(argv[1], "r");
     char *line = (char *) malloc(sizeof(char) * MAX_LINE_LENGTH);
     int instruction_count = 0;
+
+    // Initializing our Parser_Data structure
     Parser_Data *data = (Parser_Data *) malloc(sizeof(Parser_Data));
     data->label_table = create_table();
-    data->opcode_table = create_opcode_table();
+    data->mnemonic_table = create_mnemonic_table();
     data->parsetype_table = create_parsetype_table();
     data->memory = (byte *) malloc(sizeof(byte) * MEMORY_SIZE);
 
-    // Generate symbol table (Pass 1)
+    // Generate symbol table (Pass 1) by reading the file line by line
     char *label;
     while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {
         if (strstr(line, ":") != NULL) { // If ':' is in the line
@@ -44,6 +39,15 @@ int main(int argc, char **argv) {
     rewind(file);
     data->last_instr = instruction_count - 1;
     instruction_count = 0;
+
+    // Function pointers array used to avoid the need of a switch case or multiple if statements
+    unsigned int (*parsers[])(char *, Parser_Data *) = {
+            parse_data_processing,
+            parse_multiply,
+            parse_data_transfer,
+            parse_branch,
+            parse_special
+    };
 
     // Generate binary encoding for each line (Pass 2)
     while (fgets(line, MAX_LINE_LENGTH, file) != NULL) {

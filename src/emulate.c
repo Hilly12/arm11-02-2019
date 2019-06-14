@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
 
     byte memory[MEMORY_SIZE];
 
-    // State of ARM machine when turned on [Pg. 3 Spec]
+    // State of ARM machine when turned on
     for (byte i = 0; i < REGISTERS; i++) {
         registers[i] = 0;
     }
@@ -19,13 +19,13 @@ int main(int argc, char **argv) {
         memory[i] = 0;
     }
 
-    // Stores the GPIO addresses
+    // Stores the addresses related to accessing GPIO pins and initializes them to 0
     byte gpio[GPIOBYTES];
     for (byte i = 0; i < GPIOBYTES; i++) {
         gpio[i] = 0;
     }
 
-    // Stores the addresses that turn the GPIO on and off
+    // Stores the addresses that turn the GPIO on and off and initializes them to 0
     byte gpio_on[GPIO_ON_OFF_BYTES];
     byte gpio_off[GPIO_ON_OFF_BYTES];
     for (byte i = 0; i < GPIO_ON_OFF_BYTES; i++) {
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
             registers[PC_REF] += 4;
         } else {
             // Otherwise fetch an ANDEQ instruction
-            for (byte i = 0; i < 8; i++) {
+            for (byte i = BITS_28_TO_31; i <= BITS_28_TO_31; i++) {
                 fetchedInstr[i] = 0;
             }
         }

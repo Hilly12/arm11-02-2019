@@ -1,11 +1,9 @@
 #include "emulate_utils.h"
 
-// Checks if the sum of 2 integers gives an overflow (the sum is given as an argument as well)
 byte check_overflow(unsigned int const *a, unsigned int const *b, unsigned int const *result) {
     return ((*a > 0 && *b > 0 && ((int) *result) < 0) || (((int) *a) < 0 && ((int) *b) < 0 && *result > 0));
 }
 
-// Check if Cond satisfies CPSR register [Pg. 4 spec]
 byte is_condition_satisfied(unsigned int const *cpsr, byte const *condition) {
     byte important_bits = *cpsr >> 28; // important_bits = NZCV
     switch (*condition) {
@@ -123,10 +121,8 @@ void gpio_access_print(unsigned int *address) {
 }
 
 void load(unsigned int const *address, byte const *memory, unsigned int *Rd_register) {
-    *Rd_register = (((((memory[*address + 3] << 8) |
-                       memory[*address + 2]) << 8) |
-                     memory[*address + 1]) << 8) |
-                   memory[*address];
+    *Rd_register = (memory[*address + 3] << 24) | (memory[*address + 2] << 16) |
+                   (memory[*address + 1] << 8) | memory[*address];
 }
 
 void store(unsigned int const *address, byte *memory, unsigned int const *Rd_register) {
@@ -148,10 +144,7 @@ void output(unsigned int const *registers, byte const *memory) {
     // Print non-zero memory
     printf("Non-zero memory:\n");
     for (unsigned int i = 0; i < MEMORY_SIZE; i += 4) {
-        int mem = (((((memory[i] << 8) |
-                      memory[i + 1]) << 8) |
-                    memory[i + 2]) << 8) |
-                  memory[i + 3];
+        int mem = (memory[i] << 24) | (memory[i + 1] << 16) | (memory[i + 2] << 8) | memory[i + 3];
         if (mem != 0) {
             printf("0x%08x: 0x%08x\n", i, mem);
         }
