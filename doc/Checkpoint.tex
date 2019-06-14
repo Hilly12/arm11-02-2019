@@ -1,30 +1,58 @@
 \documentclass[11pt]{article}
 
+\setlength{\parindent}{1cm}
 \usepackage{fullpage}
+\usepackage{forest}
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
 
 \begin{document}
 
-\title{ARM Checkpoint... }
-\author{TODO}
+\title{\vspace{-1.5\baselineskip}ARM11 Checkpoint Report }
+\author{Miroslav LAMBREV, Aahil MEHTA, Radostin PETROV, Ruari PHIPPS}
 
 \maketitle
 
 \section{Group Organisation}
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+Our group work started by creating a shared Google Document, in which we drafted the project structure and interpreted the spec, so that the information is more condensed and accessible. The first thing we discussed was what data structures we would use for implementing the memory and the registers. After that we decided on the global variables that we would define and created a simple skeleton file of our initial implementation of the emulator, which we pushed to git. \par
+Using this as a base, we split the work into smaller chunks and started building the original implementation with the necessary functions. Although we assigned different jobs to group members, we would often collaborate or switch roles, if the person was having difficulties with their part of the work. As we only worked with a single \texttt{.c} file and we were inexperienced with git, we initially used a private Dropbox folder for our emulator. After gaining some confidence with git, we started pushing our code there, because it was a lot more convenient. We used the shared document to create milestones and plan ahead. \par
+Our teamwork was slightly unstable at first, given that some team members were absent for the first few days, however, it greatly improved after we all started meeting and working together on the project. It seems that our team has a good mix of skills with some people more experienced on the logical and implementation side of the project, while others have an understanding of the technical side. Whenever someone encountered a problem, there would always be a team member able to help. \par
+A misunderstanding both on our part and the mentor caused us to reschedule our first meeting with him for Tuesday May 28. The meeting went well, however, our mentor was not able to answer some of our questions as they were too closely connected with implementation of the code. By then we had already created our first version of the emulator, although we had formatting errors and we were not passing the tests.
 
-\section{Implementation Strategies}
+\section{Implementation of \texttt{emulate.c}}
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
-nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+Our emulator has the following structure:
+\begin{itemize}
+    
+\item The \texttt{emulate.c} file contains the \texttt{main} function, which takes a filename containing the binary object code. We first initialise the state of the ARM machine (\textit{all memory locations and registers become 0}) and then load the binary file into memory. Then, we start our three cycle (\textbf{execute-decode-fetch}) pipeline and finally, after executing all instructions or executing the halt instruction, the \texttt{main} function prints the register states to standard output.
+\end{itemize}
+\begin{minipage}{0.6\linewidth}
+\begin{itemize}
+\item \texttt{pipeline.c} contains our three functions for our three cycle pipeline. The \texttt{execute} function uses a switch statement on the type of instruction and then calls to a helper function to execute each decoded instruction based on its type.
+\item The \texttt{execute.c} source file has the definitions for our execute helper functions.
+\item \texttt{utils.c} file contains helpful utility functions that we use throughout the emulator, like bit operations, shift operations, as well as functions to check for overflow or whether the Cond field is satisfied by the CPSR register and an output function to display all the registers and memory changes to standard output.
+\end{itemize}
+
+\par For each of the \texttt{.c} files we have their respective header file, which contains the dependant libraries, as well as a header file, used to define constants and type definitions.
+\begin{itemize}
+    \item \texttt{definitions.h} contains the definitions of all constants and type definitions that we have used.
+\end{itemize}
+\end{minipage}
+\hspace{0.05\linewidth}
+\begin{minipage}{0.35\linewidth}
+
+\centering
+\includegraphics[scale=0.8]{images/dependency_diagram.png}
+\caption{Figure 1: Dependency Diagram for \texttt{emulate.c}}
+\end{minipage}
+
+
+\section{Implementation of the other parts and the extension}
+
+Bearing in mind our late start with the emulator and our current progress, we believe that we will have enough time to finish the rest of the project. We have already started implementing the assembler and our work management is greatly improved.
+\par Our team is now more experienced with git and we therefore have decided to split the work by creating a list of issues. Each team member would flag the issue and start working on it individually on their own branch, and merge with master after running basic tests on the code. 
+\par We plan to finish Parts II and III by the beginning of next week, which should allow us enough time for the extension. We have still not thought about our extension, but we want to give it roughly 50\% of time spent on the group project.
+
 
 \end{document}
