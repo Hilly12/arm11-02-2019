@@ -1,5 +1,4 @@
 #include "fb.h"
-#include <stdio.h>
 #include "mailbox.h"
 
 typedef struct {
@@ -25,7 +24,7 @@ void fb_init(unsigned width, unsigned height, unsigned depth, unsigned db) {
 
     if(db) {
         fb.height = height;
-        fb.virtual_height = 2*height;
+        fb.virtual_height = 2 * height;
     } else {
       fb.height = height;
       fb.virtual_height = height;
@@ -33,7 +32,7 @@ void fb_init(unsigned width, unsigned height, unsigned depth, unsigned db) {
 
     fb.width = width;
     fb.virtual_width = width;
-    fb.depth = depth * 8; // convert number of bytes to number of bits
+    fb.depth = depth; // convert number of bytes to number of bits
     fb.x_offset = 0;
     fb.y_offset = 0;
 
@@ -44,6 +43,24 @@ void fb_init(unsigned width, unsigned height, unsigned depth, unsigned db) {
 
     mailbox_write(MAILBOX_FRAMEBUFFER, (unsigned)&fb + GPU_NOCACHE);
     (void) mailbox_read(MAILBOX_FRAMEBUFFER);
+}
+
+void fb_clear(unsigned int col, unsigned int size) {
+    unsigned long long *im = (unsigned long long *)fb_get_draw_buffer(); 
+
+    // Assuming buffer size in bytes is divisible by 16.
+    unsigned long long c = (unsigned long long) col << 32 | col;
+    unsigned int s = size / 2;
+    for(unsigned i = 0; i < s; i += 8, im += 8) {
+        im[0] = c;
+        im[1] = c;
+        im[2] = c;
+        im[3] = c;
+        im[4] = c;
+        im[5] = c;
+        im[6] = c;
+        im[7] = c;
+    }
 }
 
 unsigned fb_get_depth(void) {

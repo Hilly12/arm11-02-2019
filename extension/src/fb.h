@@ -8,6 +8,8 @@
 
 void fb_init(unsigned width, unsigned height, unsigned depth,
              unsigned doublebuffer);
+void fb_clear(unsigned int col, unsigned int size);
+
 
 unsigned fb_get_depth(void);
 unsigned fb_get_height(void);

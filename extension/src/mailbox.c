@@ -18,10 +18,10 @@ typedef struct {
 void mailbox_write ( unsigned channel, unsigned addr )
 {
   // mailbox has a maximum of 16 channels
-  if ( channel >= MAILBOX_MAXCHANNEL ) return;
+  if (channel >= MAILBOX_MAXCHANNEL ) return;
 
   // addr must be a multiple of 16
-  if ( addr & 0xF ) return;
+  if (addr & 0xF) return;
 
   volatile mailbox_t *mailbox = (volatile mailbox_t *)MAILBOX_BASE;
 
