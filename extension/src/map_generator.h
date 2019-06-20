@@ -1,26 +1,37 @@
+#ifndef MAP_GENERATOR_H
+#define MAP_GENERATOR_H
+
 #define MAP_WIDTH 128
 #define MAP_HEIGHT 72
-#define VISIBLE_WIDTH 16
-#define VISIBLE_HEIGHT 12
+#define VISIBLE_WIDTH 20
+#define VISIBLE_HEIGHT 15
 #define SQUARE_SIZE (WIDTH / VISIBLE_WIDTH)
-#define HCENT 7
-#define VCENT 5
+#define HCENT 9
+#define VCENT 7
+#define MAX_ROOMS_EVER 25
+
+#include <stdint.h>
+#include "random.h"
 
 typedef struct room {
-    int x1;
-    int x2;
-    int y1;
-    int y2;
-    int cx;
-    int cy;
-} room;
+    uint8_t x1;
+    uint8_t x2;
+    uint8_t y1;
+    uint8_t y2;
+} room_t;
 
-void generate_map(char **map, int floor, int *player_x, int *player_y);
+void generate_map(uint8_t *map, uint8_t floor, uint8_t *player_x, uint8_t *player_y);
 
-int intersect(room r1, room r2);
+int intersect(room_t *r1, room_t *r2);
 
-void h_corridor(char **map, int x1, int x2, int y);
+void h_corridor(uint8_t *map, uint8_t x1, uint8_t x2, uint8_t y);
 
-void v_corridor(char **map, int y1, int y2, int x);
+void v_corridor(uint8_t *map, uint8_t y1, uint8_t y2, uint8_t x);
 
 int is_valid(int x, int y);
+
+int is_movable(uint8_t *map, int x, int y);
+
+int get_surrounding_floor_tiles(uint8_t *map, uint8_t hPos, uint8_t vPos);
+
+#endif

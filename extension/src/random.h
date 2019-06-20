@@ -9,6 +9,6 @@
 
 void rand_init(void);
 
-unsigned int rand(unsigned int min, unsigned int max);
+unsigned int get_random(unsigned int min, unsigned int max);
 
 #endif

@@ -21,7 +21,6 @@ extern int timer_fps_current;
 
 #define TIMER_SEC 1000000
 
-unsigned long long timer_current();
 void timer_count_frame();
 void timer_sleep(unsigned long long delay);
 

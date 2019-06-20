@@ -15,10 +15,9 @@ typedef struct {
   unsigned int write;
 } mailbox_t;
 
-void mailbox_write ( unsigned channel, unsigned addr )
-{
+void mailbox_write (unsigned channel, unsigned addr) {
   // mailbox has a maximum of 16 channels
-  if (channel >= MAILBOX_MAXCHANNEL ) return;
+  if (channel >= MAILBOX_MAXCHANNEL) return;
 
   // addr must be a multiple of 16
   if (addr & 0xF) return;
@@ -26,27 +25,24 @@ void mailbox_write ( unsigned channel, unsigned addr )
   volatile mailbox_t *mailbox = (volatile mailbox_t *)MAILBOX_BASE;
 
   // wait until mailbox is not full ...
-  while (mailbox->status & MAILBOX_FULL) ;
+  while (mailbox->status & MAILBOX_FULL);
 
   // mail the addr to the channel
   // why can we add the channel to the addr?
   mailbox->write = addr + channel;
 }
 
-unsigned mailbox_read ( unsigned channel )
-{
-  if ( channel >= MAILBOX_MAXCHANNEL ) return 1;
+unsigned mailbox_read (unsigned channel) {
+  if (channel >= MAILBOX_MAXCHANNEL) return 1;
 
-  volatile mailbox_t *mailbox = (volatile mailbox_t *)MAILBOX_BASE;
+  volatile mailbox_t *mailbox = (volatile mailbox_t *) MAILBOX_BASE;
 
-  while (1)
-  {
+  while (1) {
     // wait until mailbox is not empty ...
-    while (mailbox->status & MAILBOX_EMPTY) ;
+    while (mailbox->status & MAILBOX_EMPTY);
     // read the address and channel
     unsigned ra = mailbox->read;
-    if ((ra & 0xF) == channel)
-      // return if we get a message on the channel we want
+    if ((ra & 0xF) == channel) // return if we get a message on the channel we want
       return (ra >> 4);
   }
   return 0;

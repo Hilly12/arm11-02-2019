@@ -1,4 +1,5 @@
 #include "random.h"
+#include <stdlib.h>
 
 void rand_init(void) {
     *RNG_STATUS=0x40000;
@@ -7,6 +8,7 @@ void rand_init(void) {
     while(!((*RNG_STATUS)>>24)) asm volatile("nop"); // Wait to gain entropy
 }
 
-unsigned int rand(unsigned int min, unsigned int max) {
-    return *RNG_DATA % (max-min) + min;
+unsigned int get_random(unsigned int min, unsigned int max) {
+    return (rand() % (max - min)) + min;
+    // return *RNG_DATA % (max-min) + min;
 }

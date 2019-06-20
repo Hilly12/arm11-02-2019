@@ -5,8 +5,6 @@ extern void main(void);
 
 // The C function _cstart is called from the assembly in start.s
 // _cstart zeroes out the BSS section and then calls main.
-// After return from main(), turns on the green ACT LED as
-// a sign of successful completion.
 void _cstart(void) 
 {
     int *bss = &__bss_start__;
