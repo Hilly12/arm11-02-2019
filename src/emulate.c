@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
 
     byte memory[MEMORY_SIZE];
 
-    // State of ARM machine when turned on [Pg. 3 Spec]
+    // State of ARM machine when turned on
     for (byte i = 0; i < REGISTERS; i++) {
         registers[i] = 0;
     }
@@ -19,13 +19,13 @@ int main(int argc, char **argv) {
         memory[i] = 0;
     }
 
-    // Stores the GPIO addresses
+    // Stores the addresses related to accessing GPIO pins and initializes them to 0
     byte gpio[GPIOBYTES];
     for (byte i = 0; i < GPIOBYTES; i++) {
         gpio[i] = 0;
     }
 
-    // Stores the addresses that turn the GPIO on and off
+    // Stores the addresses that turn the GPIO on and off and initializes them to 0
     byte gpio_on[GPIO_ON_OFF_BYTES];
     byte gpio_off[GPIO_ON_OFF_BYTES];
     for (byte i = 0; i < GPIO_ON_OFF_BYTES; i++) {
@@ -38,17 +38,17 @@ int main(int argc, char **argv) {
     fread(memory, sizeof(byte), MEMORY_SIZE, binary);
     fclose(binary);
 
-    byte fetchedInstr[8]; // Cond | 4 | 4 | r1 | r2 | 4 | 4 | 4
+    byte fetched_instr[8]; // Cond | 4 | 4 | r1 | r2 | 4 | 4 | 4
 
     Decoded_Instruction decoded_instr;
 
     // First iteration (only fetching)
-    fetch(&registers[PC_REF], memory, fetchedInstr);
+    fetch(&registers[PC_REF], memory, fetched_instr);
     registers[PC_REF] += 4;
 
     // Second iteration (decoding and fetching);
-    decode(fetchedInstr, registers, &decoded_instr);
-    fetch(&registers[PC_REF], memory, fetchedInstr);
+    decode(fetched_instr, registers, &decoded_instr);
+    fetch(&registers[PC_REF], memory, fetched_instr);
     registers[PC_REF] += 4;
 
     // Third iteration onward (executing, decoding and fetching)
@@ -65,17 +65,17 @@ int main(int argc, char **argv) {
         if (decoded_instr.type == BRANCH) {
             decoded_instr.type = INVALID;
         } else {
-            decode(fetchedInstr, registers, &decoded_instr);
+            decode(fetched_instr, registers, &decoded_instr);
         }
 
         // Fetch instruction if there are more instructions to consider
         if (registers[PC_REF] < MEMORY_SIZE) {
-            fetch(&registers[PC_REF], memory, fetchedInstr);
+            fetch(&registers[PC_REF], memory, fetched_instr);
             registers[PC_REF] += 4;
         } else {
             // Otherwise fetch an ANDEQ instruction
-            for (byte i = 0; i < 8; i++) {
-                fetchedInstr[i] = 0;
+            for (byte i = BITS_28_TO_31; i <= BITS_28_TO_31; i++) {
+                fetched_instr[i] = 0;
             }
         }
     }

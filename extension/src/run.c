@@ -52,6 +52,7 @@ void new_floor() {
 }
 
 void start() {
+<<<<<<< HEAD
     lvl = 1;
     maxhp = hp = BASE_HP;
     atk = def = lck = BASE_STATS;
@@ -198,6 +199,21 @@ void draw() {
         }
     }
     enemy_t *en;
+=======
+    /* Part II
+    player_x = 0;
+    player_y = 0;
+    generate_map((char **) map, 5, &player_x, &player_y);
+    */
+}
+
+void update() {
+}
+
+void draw() {
+    fb_clear(0, SIZE);
+    /* Part II
+>>>>>>> 757eb4219f84dd9772e1c71f095e27f68e3a86fc
     for (int x = 0; x < VISIBLE_WIDTH; x++) {
         if (x == 0 && x_shift > 0) {
             continue;
@@ -228,7 +244,9 @@ void draw() {
             }
         }
     }
+    
 
+<<<<<<< HEAD
     for (int i = 0; i < enemy_count; i++) {
         en = (enemy_t *) &enemies[i];
         int vx = en->x - player_x + HCENT;
@@ -350,6 +368,10 @@ void graphics_demo() {
         fb_swap_buffer();
         timer_sleep(40000);
     }
+=======
+    draw_rectangle(HCENT * SQUARE_SIZE, VCENT * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE, RED);
+    */
+>>>>>>> 757eb4219f84dd9772e1c71f095e27f68e3a86fc
 }
 
 void main(void) {

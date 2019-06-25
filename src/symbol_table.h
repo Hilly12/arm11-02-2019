@@ -27,9 +27,8 @@ void add_entry(Symbol_Table *sym_table, char *label, unsigned int address);
 // Searches symbol table for label and returns corresponding address
 int get_address(Symbol_Table const *sym_table, char const *label);
 
-// Creates symbol table mapping string (instruction mnemonic)
-// to corresponding opcode
-Symbol_Table *create_opcode_table(void);
+// Creates symbol table mapping string (instruction mnemonic) to integers corresponding to the mnemonic
+Symbol_Table *create_mnemonic_table(void);
 
 // Creates symbol table mapping string (instruction mnemonic)
 // to corresponding type of instruction for the parser to parse
