@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "graphics.h": "c",
-        "map_generator.h": "c"
-    },
-    "C_Cpp.errorSquiggles": "Disabled"
-}

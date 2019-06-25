@@ -3,6 +3,8 @@ arm-none-eabi-gcc -O2 -mfpu=vfp -mfloat-abi=hard -march=armv6zk -mtune=arm1176jz
 
 COMPILE MULTIPLE .s and .c FILES INTO .elf FILE
 arm-none-eabi-gcc -O2 -mfpu=vfp -mfloat-abi=hard -march=armv6zk -mtune=arm1176jzf-s -nostartfiles *.s *.c -o kernel.elf
+-- USE THIS IF THE ABOVE DOESN'T WORK
+arm-none-eabi-gcc -O2 -mfpu=vfp -mfloat-abi=soft -march=armv6zk -mtune=arm1176jzf-s -nostartfiles *.s *.c -o kernel.elf
 
 CONVERT .elf into .img
 arm-none-eabi-objcopy kernel.elf -O binary kernel.img
