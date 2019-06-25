@@ -2,8 +2,50 @@
 
 This was created with the intention of allowing future students attempting this project to skip the stage of creating a graphics library and supporting detailed animations so they can jump into creating games immediately.
 
-The Graphics library follows the following functions:
+The Graphics library follows the following functions: (more detail in graphics.h)
+```
+// Draws pixel of color c 
+void draw_pixel(int x, int y, color c);
 
+// Draws rectangle of color c and dimensions w x h at [x, y]
+void draw_rectangle(int x, int y, int w, int h, color c);
+
+// Draws image stored in color array spanning dimensions w x h at [x, y]
+// PRE - image must point to the first element in an 2D array of dimensions [w][h]
+void draw_image(color *image, int x, int y, int w, int h);
+
+// Draws all pixels apart from those with color equivalent to DELIMITER
+// PRE - image must point to the first element in an 2D array of dimensions [w][h]
+void draw_transparent_image(color *image, int x, int y, int w, int h);
+
+// Same as draw_transparent_image but horizontally inverted
+// PRE - image must point to the first element in an 2D array of dimensions [w][h]
+void draw_transparent_image_inverted(color *image, int x, int y, int w, int h);
+
+// Draws horizontal line of color c across the the screen at y coord
+void draw_hline(int y, color c);
+
+// Draws vertical line of color c down the the screen at x coord
+void draw_vline(int x, color c);
+
+// Draws character letter on the screen according to predefined 8 x 8 font at [x, y]
+// This font is defined in "resources.c"
+void draw_char(int x, int y, char letter, color col);
+
+// Draws a string on the screen at [x, y] of height 8 and width strlen(string) * 8
+// Note to draw string "Hello" you must declare the string in the form:
+// char *str = { 'H', 'e', 'l', 'l', 'o', '\0' }; (or)
+// char *str = "-Hello\0";
+// Note the first character is ignored here, and the sentinel is usually unnecessary
+void draw_string(int x, int y, char *string, color col);
+
+// Draws a string as in draw_string but followed by the integer val
+// PRE -- val >= 0
+void draw_string_int(int x, int y, char *string, int val, color col);
+
+// Draws a circle of diameter d and color c at [x, y]
+void draw_circle(int x, int y, int d, color col);
+```
 
 There is also a Map Generator module which supports procedural dungeon generation.
 
