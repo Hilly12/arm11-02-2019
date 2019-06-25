@@ -50,6 +50,16 @@ void draw_circle(int x, int y, int d, color col);
 There is also a Map Generator module which supports procedural dungeon generation.
 
 The game logic has been abstracted into a loop calling functions which you can use to modify the state of the program per frame.
+```
+start(); // Initialize state
+// Game Loop
+while (1) {
+  update(); // Update state per frame
+  draw(); // Render onto screen
+  frame_count++;
+  timer_sleep(REFRESH_RATE);
+}
+```
 
 Note: 
 You should only need to modify the code in run.c
