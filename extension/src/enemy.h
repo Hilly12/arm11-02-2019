@@ -20,6 +20,14 @@ typedef struct enemy {
 
 void spawn_enemies(unsigned long long *enemies, uint8_t *map, int player_x, int player_y, int flr, int enemy_count);
 
+void make_move(enemy_t *enemy, uint8_t *map, int player_x, int player_y, int player_moving, int player_dir);
+
+void move_toward(enemy_t *enemy, int target_x, int target_y, int valid_move_directions[4], uint8_t *map);
+
+void move(enemy_t *enemy, int dir, uint8_t* map);
+
+void end_turn(enemy_t *enemy);
+
 int is_attacking(enemy_t *enemy);
 
 int is_moving(enemy_t *enemy);

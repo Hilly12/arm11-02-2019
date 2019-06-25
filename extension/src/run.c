@@ -15,7 +15,8 @@ uint8_t player_x;
 uint8_t player_y;
 uint8_t direction; // LEFT, RIGHT, UP, DOWN
 uint8_t moving_left, moving_right, moving_up, moving_down;
-uint8_t moving;
+uint8_t attack_down;
+uint8_t moving, attacking;
 uint8_t facing_left;
 uint8_t state; // IDLE / ANIMATING
 uint8_t animation_steps;
@@ -31,6 +32,10 @@ unsigned long long enemies[MAX_ENEMIES] = { 0 };
 uint8_t map[MAP_WIDTH][MAP_HEIGHT] = { 0 }; // 1 entry = Blocked | Excess Wall | Tile Sprite | Tile Sprite | Tile type
 
 char *floor_pre = " Floor:\0";
+char *lvl_pre = " Level:\0";
+char *atk_pre = " ATK:\0";
+char *def_pre = " DEF:\0";
+char *lck_pre = " LCK:\0";
 
 void new_floor() {
     flr++;
@@ -38,7 +43,7 @@ void new_floor() {
     direction = 1;
     state = 0;
     animation_steps = 0;
-    moving = moving_left = moving_right = moving_up = moving_down = 0;
+    moving = attacking = moving_left = moving_right = moving_up = moving_down = attack_down = 0;
     moving_up = 1;
     facing_left = 0;
     generate_map(map[0], 5, &player_x, &player_y);
@@ -53,7 +58,77 @@ void start() {
     new_floor();
 }
 
+void get_input() {
+    char c = demo_hardcode(frame_count);
+    // moving_left = (c >> 3) & 1;
+    // moving_right = (c >> 2) & 1;
+    // moving_up = (c >> 1) & 1;
+    // moving_down = c & 1;
+    int r = get_random(0, 4);
+    if (r == 3) {
+        moving_left = 1;
+        moving_right = 0;
+        moving_up = 0;
+        moving_down = 0;
+    } else if (r == 2) {
+        moving_left = 0;
+        moving_right = 1;
+        moving_up = 0;
+        moving_down = 0;
+    } else if (r) {
+        moving_left = 0;
+        moving_right = 0;
+        moving_up = 1;
+        moving_down = 0;
+    } else {
+        moving_left = 0;
+        moving_right = 0;
+        moving_up = 0;
+        moving_down = 1;
+    }
+    // if (is_movable(map[0], player_x - 1, player_y)) {
+    //     moving_left = 1;
+    // } else {
+    //     moving_left = 0;
+    //     if (moving_right) {
+    //         moving_right = 0;
+    //         moving_up = 1;
+    //     } else {
+    //         moving_up = 0;
+    //         moving_right = 1;
+    //     }
+    //     if (!is_movable(map[0], player_x, player_y - 1)) {
+    //         moving_up = 0;
+    //         moving_right = 0;
+    //         moving_down = 1;
+    //     }
+    // }
+    // update_input();
+    // int a = * ((int *) button_pressed);
+    // char *str = " Te:\0";
+    // draw_string_int(200, 10, str, a, WHITE);
+    // if (frame_count > 30) {
+    //     if (!is_movable(map[0], player_x, player_y - 1) && moving_up) {
+    //     moving_up = 0;
+    //     moving_right = 1;
+    // }
+    // if (!is_movable(map[0], player_x + 1, player_y) && moving_right) {
+    //     moving_right = 0;
+    //     moving_left = 1;
+    // }
+    // if (!is_movable(map[0], player_x - 1, player_y) && moving_left) {
+    //     moving_left = 0;
+    //     moving_down = 1;
+    // }
+    // if (!is_movable(map[0], player_x, player_y + 1) && moving_down) {
+    //     moving_down = 0;
+    //     moving_left = 1;
+    // }
+    // }
+}
+
 void update() {
+    get_input();
     if (state) { // ANIMATING
         animation_steps++;
         if (animation_steps >= MAX_STEPS) {
@@ -67,6 +142,10 @@ void update() {
             } else if (direction == 3) {
                 player_y++;
             }
+            for (int i = 0; i < enemy_count && enemies[i]; i++) {
+                end_turn((enemy_t *) &enemies[i]);
+            }
+            attacking = 0;
             moving = 0;
             state = 0;
         }
@@ -87,10 +166,15 @@ void update() {
             direction = 3;
             map[player_x][player_y + 1] |= 1 << 4;
             moving = 1;
+        } else if (attack_down) {
+            attacking = 1;
         }
-        if (moving) {
+        if (moving || attacking) {
             map[player_x][player_y] &= 0xEF; // 1110 1111 - unblock
             state = 1;
+            for (int i = 0; i < enemy_count && enemies[i]; i++) {
+                make_move((enemy_t *) &enemies[i], map[0], player_x, player_y, moving, direction);
+            }
         }
     }
 }
@@ -113,6 +197,7 @@ void draw() {
             y_shift = -movement_shift * (direction == 2);
         }
     }
+    enemy_t *en;
     for (int x = 0; x < VISIBLE_WIDTH; x++) {
         if (x == 0 && x_shift > 0) {
             continue;
@@ -130,20 +215,41 @@ void draw() {
 
             int rx = x + player_x - HCENT;
             int ry = y + player_y - VCENT;
+            int X = x * SQUARE_SIZE - x_shift;
+            int Y = y * SQUARE_SIZE - y_shift;
             if (is_valid(rx, ry) && !((map[rx][ry] >> 3) & 1)) {
                 if (map[rx][ry] & 1) {
-                    draw_image(get_wall_tile((map[rx][ry] >> 1) & 3),
-                     x * SQUARE_SIZE - x_shift,
-                     y * SQUARE_SIZE - y_shift,
-                     SQUARE_SIZE, SQUARE_SIZE);
+                    draw_image(get_wall_tile((map[rx][ry] >> 1) & 3), X, Y, SQUARE_SIZE, SQUARE_SIZE);
                 } else {
-                    draw_image(get_floor_tile((map[rx][ry] >> 1) & 3),
-                     x * SQUARE_SIZE - x_shift,
-                     y * SQUARE_SIZE - y_shift,
-                     SQUARE_SIZE, SQUARE_SIZE);
+                    draw_image(get_floor_tile((map[rx][ry] >> 1) & 3), X, Y, SQUARE_SIZE, SQUARE_SIZE);
                 }
             } else {
-                draw_rectangle(x * SQUARE_SIZE - x_shift, y * SQUARE_SIZE - y_shift, SQUARE_SIZE, SQUARE_SIZE, BLACK);
+                draw_rectangle(X, Y, SQUARE_SIZE, SQUARE_SIZE, BLACK);
+            }
+        }
+    }
+
+    for (int i = 0; i < enemy_count; i++) {
+        en = (enemy_t *) &enemies[i];
+        int vx = en->x - player_x + HCENT;
+        int vy = en->y - player_y + VCENT;
+        if (0 < vx && 0 < vy && vx < VISIBLE_WIDTH - 1 && vy < VISIBLE_HEIGHT - 1) {
+            int X = vx * SQUARE_SIZE - x_shift;
+            int Y = vy * SQUARE_SIZE - y_shift;
+            // if (is_moving(en)) {
+            //     int dir = get_direction(en);
+            //     if (dir & 1) { // Right, Down
+            //         X += movement_shift * (dir == 1);
+            //         Y += movement_shift * (dir == 3);
+            //     } else { // Left, Up
+            //         X += -movement_shift * (dir == 0);
+            //         Y += -movement_shift * (dir == 2);
+            //     }
+            // }
+            if (is_facing_left(en)) {
+                draw_transparent_image(get_enemy((frame_count >> 1) & 1, en->type), X, Y, SQUARE_SIZE, SQUARE_SIZE);
+            } else {
+                draw_transparent_image_inverted(get_enemy((frame_count >> 1) & 1, en->type), X, Y, SQUARE_SIZE, SQUARE_SIZE);
             }
         }
     }
@@ -190,12 +296,14 @@ void graphics_demo() {
     char wt[] = " Where is true?\0";
     unsigned short wtcol = 0xFFFF;
 
-    int py = 300, pvel = 0, pg = 1, frn = 800, frd = 1000;
+    int py = 400, pvel = 0, pg = 1, frn = 800, frd = 1000;
 
     int cx = 10, cy = 50, cxvel = -4, cyvel = 4;
 
     while (1) {
         clear();
+
+        draw_transparent_image(snickers[0], 40, 100, 200, 165);
 
         draw_transparent_image(get_player(0), 400, py, SQUARE_SIZE, SQUARE_SIZE);
         py += pvel;
@@ -240,7 +348,7 @@ void graphics_demo() {
         }
 
         fb_swap_buffer();
-        timer_sleep(50000);
+        timer_sleep(40000);
     }
 }
 
@@ -249,7 +357,7 @@ void main(void) {
 
     fade_intro();
 
-    graphics_demo();
+    // graphics_demo();
 
     start();
 
@@ -257,7 +365,46 @@ void main(void) {
         update();
         draw();
         frame_count++;
-        timer_sleep(120000);
+        if (frame_count > 100) {
+            break;
+        }
+        timer_sleep(80000);
+    }
+
+    start();
+
+    while (1) {
+        update();
+        draw();
+        frame_count++;
+        if (frame_count > 100) {
+            break;
+        }
+        timer_sleep(80000);
+    }
+
+    start();
+
+    while (1) {
+        update();
+        draw();
+        frame_count++;
+        if (frame_count > 100) {
+            break;
+        }
+        timer_sleep(80000);
+    }
+
+    start();
+
+    while (1) {
+        update();
+        draw();
+        frame_count++;
+        if (frame_count > 100) {
+            break;
+        }
+        timer_sleep(80000);
     }
 
     while(1);
